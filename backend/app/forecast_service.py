@@ -137,6 +137,11 @@ class Service:
             res = self.onnx_engine.predict(model_name, row.to_numpy())
             if res is not None and len(res) > 0:
                 return float(np.clip(res[0], 0, None))
+            # ONNX fallback: use lgb ONNX model if xgb ONNX is not available (keeps RAM <80MB)
+            alt_name = f"lgb_cpu_point_None_{h}" if key == "point" else f"lgb_cpu_{key}_{key}_{h}"
+            res = self.onnx_engine.predict(alt_name, row.to_numpy())
+            if res is not None and len(res) > 0:
+                return float(np.clip(res[0], 0, None))
         booster = self.get_booster(fw, h, key)
         return float(np.clip(predict(booster, fw, row), 0, None)[0])
 
