@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Melbourne CBD Sensory Platform - Production System Design Document</title>
+<style>
+    :root {
+        --primary: #0f172a;
+        --accent: #2563eb;
+        --bg: #f8fafc;
+        --card-bg: #ffffff;
+        --text: #1e293b;
+        --border: #e2e8f0;
+    }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        line-height: 1.6;
+        color: var(--text);
+        background-color: var(--bg);
+        margin: 0;
+        padding: 2rem 1rem;
+    }
+    .container {
+        max-width: 900px;
+        margin: 0 auto;
+        background: var(--card-bg);
+        padding: 2.5rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        border: 1px solid var(--border);
+    }
+    h1 {
+        color: var(--primary);
+        font-size: 2rem;
+        border-bottom: 3px solid var(--accent);
+        padding-bottom: 0.5rem;
+        margin-top: 0;
+    }
+    h2 {
+        color: #1e40af;
+        font-size: 1.4rem;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 0.4rem;
+        margin-top: 1.8rem;
+    }
+    h3 {
+        color: #334155;
+        font-size: 1.15rem;
+        margin-top: 1.4rem;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1.2rem 0;
+        font-size: 0.95rem;
+    }
+    th, td {
+        padding: 0.75rem 1rem;
+        text-align: left;
+        border: 1px solid var(--border);
+    }
+    th {
+        background-color: #f1f5f9;
+        font-weight: 600;
+        color: var(--primary);
+    }
+    tr:nth-child(even) {
+        background-color: #f8fafc;
+    }
+    code {
+        background: #f1f5f9;
+        color: #0f172a;
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 0.9em;
+    }
+    pre {
+        background: #0f172a;
+        color: #f8fafc;
+        padding: 1rem;
+        border-radius: 8px;
+        overflow-x: auto;
+    }
+    pre code {
+        background: transparent;
+        color: inherit;
+    }
+    ul, ol {
+        padding-left: 1.5rem;
+    }
+    li {
+        margin-bottom: 0.4rem;
+    }
+    blockquote {
+        border-left: 4px solid var(--accent);
+        margin: 1rem 0;
+        padding: 0.5rem 1rem;
+        background: #eff6ff;
+        color: #1e40af;
+    }
+    @media print {
+        body { background: #fff; padding: 0; }
+        .container { box-shadow: none; border: none; padding: 0; max-width: 100%; }
+    }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Corporate System Design Document (SDD)</h1>
+<h2>Melbourne CBD Pedestrian Sensory Load &amp; Real-Time Navigation Platform</h2>
+<p><strong>Document ID:</strong> SDD-PROD-2026-001<br />
+<strong>Target Environment:</strong> Production Cloud Infrastructure (Concrete Free-Tier Stack)<br />
+<strong>Compliance Standards:</strong> Australian Privacy Principles (APP / Privacy Act 1988), WCAG 2.1 AAA Accessibility<br />
+<strong>Target Audience:</strong> Enterprise Engineering Team, Data Science Leads, Product Managers, Security/Compliance Auditors  </p>
+<hr />
+<h2>1. Executive Summary &amp; Production Architecture</h2>
+<p>The <strong>Melbourne CBD Pedestrian Sensory Load &amp; Real-Time Navigation Platform</strong> provides real-time, low-stimulation walking route recommendations for neurodivergent individuals by balancing physical distance against crowd volume and sensory overstimulation.</p>
+<p>This document specifies the <strong>single, concrete, non-ambiguous production architecture</strong> derived directly from the verified codebase components:
+1. <strong>Frontend Tier (Vercel)</strong>: Static HTML5 / Vanilla ES6 / CSS3 SPA using <strong>Leaflet.js (v1.9.4)</strong> with <strong>CartoDB Positron &amp; OpenStreetMap tiles</strong>.
+2. <strong>Geocoding &amp; Foot Routing</strong>: <strong>Nominatim Geocoding API</strong> for address resolution + <strong>OSRM Public Foot Router API</strong> for dual route generation (Shortest vs. Calm Route).
+3. <strong>Backend Microservice (Render)</strong>: <strong>Python Flask + Gunicorn</strong> application (<code>app/server.py</code>, <code>app/crowd.py</code>) deployed as a production Web Service on Render.
+4. <strong>ML Prediction Engine (LightGBM + ONNX)</strong>: Trained <strong>LightGBM</strong> quantile models ($\alpha=0.1, 0.5, 0.9$) executed via <strong>ONNX Runtime</strong> for sub-5ms API forecasts.
+5. <strong>Data &amp; Caching Tier (Supabase + Upstash)</strong>: <strong>Supabase PostgreSQL</strong> for 1.61M historical records + <strong>Upstash Redis</strong> for 60-second live City of Melbourne sensor feed caching.
+6. <strong>Zero-PII Privacy Auth</strong>: Australian Privacy Principles (APP / Privacy Act 1988) compliant <strong>WebCrypto ECDSA (P-256) session pass</strong> with zero personal data collection.</p>
+<hr />
+<h2>2. Definitive Production Technology Stack (100% Free Tier)</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">System Layer</th>
+<th style="text-align: left;">Selected Technology</th>
+<th style="text-align: left;">Confirmed Implementation</th>
+<th style="text-align: left;">Production Provider</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Frontend UI</strong></td>
+<td style="text-align: left;">HTML5 + Vanilla ES6 JS + CSS3</td>
+<td style="text-align: left;"><code>app/templates/map.html</code>, <code>app/static/style.css</code></td>
+<td style="text-align: left;"><strong>Vercel</strong> (Global Static CDN)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Interactive Map</strong></td>
+<td style="text-align: left;">Leaflet.js (v1.9.4)</td>
+<td style="text-align: left;">CartoDB Positron &amp; OpenStreetMap tiles</td>
+<td style="text-align: left;">CDN (unpkg.com) + OSM</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Address Search</strong></td>
+<td style="text-align: left;">Nominatim Geocoder</td>
+<td style="text-align: left;"><code>https://nominatim.openstreetmap.org/search</code></td>
+<td style="text-align: left;">OpenStreetMap Foundation</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Foot Routing Engine</strong></td>
+<td style="text-align: left;">OSRM Foot Routing API</td>
+<td style="text-align: left;"><code>http://router.project-osrm.org/route/v1/foot/</code></td>
+<td style="text-align: left;">Open Source Routing Machine</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Backend API Server</strong></td>
+<td style="text-align: left;">Flask 3.0 + Gunicorn</td>
+<td style="text-align: left;"><code>app/server.py</code>, <code>app/crowd.py</code></td>
+<td style="text-align: left;"><strong>Render</strong> (Python Web Service)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>ML Inference Engine</strong></td>
+<td style="text-align: left;">LightGBM + ONNX Runtime</td>
+<td style="text-align: left;"><code>src/models.py</code> exported to ONNX</td>
+<td style="text-align: left;">Containerized in Render Backend</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Relational Database</strong></td>
+<td style="text-align: left;">Supabase PostgreSQL</td>
+<td style="text-align: left;">1.61M hourly records, 103 sensor locations</td>
+<td style="text-align: left;"><strong>Supabase</strong> (Serverless DB)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>In-Memory Cache</strong></td>
+<td style="text-align: left;">Upstash Redis</td>
+<td style="text-align: left;">Live City of Melbourne 1-minute feed cache</td>
+<td style="text-align: left;"><strong>Upstash</strong> (Serverless Redis)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Security &amp; Auth</strong></td>
+<td style="text-align: left;">WebCrypto API (ECDSA P-256)</td>
+<td style="text-align: left;">Client-side keypair + Anonymous JWT</td>
+<td style="text-align: left;">Browser LocalStorage + Render API</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>3. Verified System Architecture &amp; Data Flow</h2>
+<pre><code class="language-mermaid">flowchart TD
+    subgraph Client Layer (Vercel CDN - Static Web App)
+        UI[&quot;Leaflet.js Real-Time Map (map.html)&quot;]
+        ACCESSIBILITY[&quot;WCAG AAA Accessibility Bar (A+/A-, High Contrast)&quot;]
+        WEBCRYPTO[&quot;Browser WebCrypto Keypair (Zero-PII Auth)&quot;]
+    end
+
+    subgraph External Public APIs (Proven Working Solutions)
+        NOMINATIM[&quot;Nominatim Geocoder (Address Search)&quot;]
+        OSRM[&quot;OSRM Foot Router (Shortest vs. Calm Path)&quot;]
+        MELB_API[&quot;City of Melbourne Open Data API (Live Sensors)&quot;]
+    end
+
+    subgraph Backend Microservice (Render Web Service)
+        SERVER[&quot;Flask / Gunicorn Server (app/server.py)&quot;]
+        CROWD[&quot;CrowdEngine &amp; Route Evaluator (app/crowd.py)&quot;]
+        ONNX[&quot;LightGBM ONNX Quantile Forecast Engine&quot;]
+    end
+
+    subgraph Data &amp; Caching Tier (Cloud Serverless)
+        SUPABASE[(&quot;Supabase PostgreSQL (1.61M Historical Rows)&quot;)]
+        UPSTASH[(&quot;Upstash Redis (Live Sensor Feed 60s Cache)&quot;)]
+    end
+
+    UI &lt;--&gt; NOMINATIM
+    UI &lt;--&gt; OSRM
+    UI &lt;--&gt; SERVER
+    SERVER &lt;--&gt; CROWD
+    SERVER &lt;--&gt; ONNX
+    SERVER &lt;--&gt; UPSTASH
+    SERVER &lt;--&gt; SUPABASE
+    UPSTASH &lt;--&gt; MELB_API
+</code></pre>
+<hr />
+<h2>4. Australian Privacy Law (APP) &amp; Zero-PII Auth System</h2>
+<h3>4.1 Legal Governance</h3>
+<p>Under the <strong>Australian Privacy Act 1988</strong> and <strong>Australian Privacy Principles (APPs)</strong>, collecting or storing Personally Identifiable Information (PII)—such as real names, email addresses, phone numbers, or user GPS movement tracks—imposes strict legal data liabilities.</p>
+<h3>4.2 The Solution: WebCrypto Ephemeral Session Pass</h3>
+<p>The platform enforces a <strong>Zero-PII Architecture</strong>:</p>
+<pre><code class="language-mermaid">sequenceDiagram
+    autonumber
+    actor User as Client Browser
+    participant FE as Leaflet Web Frontend
+    participant WC as WebCrypto API (Browser)
+    participant BE as Flask Render Backend
+    participant DB as Supabase Session Cache
+
+    User-&gt;&gt;FE: Open Map App
+    FE-&gt;&gt;WC: Query window.crypto.subtle
+    alt First Visit
+        WC--&gt;&gt;FE: No key pair found
+        FE-&gt;&gt;WC: generateKey(&quot;ECDSA&quot;, P-256)
+        WC--&gt;&gt;FE: Public Key saved in localStorage
+        FE-&gt;&gt;BE: POST /api/v1/auth/session (Public Key Hash)
+        BE-&gt;&gt;DB: Store (SessionHash, ContrastPref, TextScalePref)
+        BE--&gt;&gt;FE: Return Anonymous JWT Token (&quot;anon_8f3a91b2&quot;)
+    else Returning Visit
+        FE-&gt;&gt;BE: GET /api/v1/user/prefs (Header: Bearer AnonymousJWT)
+        BE--&gt;&gt;FE: Return Saved Accessibility Settings
+    end
+</code></pre>
+<hr />
+<h2>5. Environment Strategy &amp; Git Workflow</h2>
+<h3>5.1 Dual Environment Deployments</h3>
+<ul>
+<li><strong>Production Environment (<code>main</code> branch)</strong>:</li>
+<li>Frontend: <code>https://cbd-calm-route.vercel.app</code></li>
+<li>Backend: <code>https://melbourne-cbd-crowd-backend.onrender.com</code></li>
+<li><strong>Development Environment (<code>develop</code> branch)</strong>:</li>
+<li>Frontend: <code>https://cbd-calm-route-dev.vercel.app</code></li>
+<li>Backend: <code>https://melbourne-cbd-crowd-backend-dev.onrender.com</code></li>
+</ul>
+<h3>5.2 GitHub Actions CI/CD Pipeline (<code>.github/workflows/deploy.yml</code>)</h3>
+<ol>
+<li><strong>Automated Testing</strong>: Triggers <code>pytest</code> unit tests on <code>app/server.py</code> and <code>src/models.py</code>.</li>
+<li><strong>Frontend Validation</strong>: Validates static assets and Leaflet configuration.</li>
+<li><strong>Automatic Deployment</strong>: Pushes <code>main</code> branch to Render production Web Service and Vercel CDN.</li>
+</ol>
+<hr />
+<h2>6. Role-Based Team Task Assignment Matrix (4-Person Team)</h2>
+<pre><code class="language-mermaid">quadrantChart
+    title Team Task Ownership Matrix
+    x-axis Low Technical Risk --&gt; High Technical Risk
+    y-axis Frontend Focus --&gt; Backend/Infrastructure Focus
+    &quot;Member 1: Frontend &amp; Maps&quot;: [0.25, 0.25]
+    &quot;Member 2: UI/UX &amp; Privacy Auth&quot;: [0.35, 0.30]
+    &quot;Member 3: Backend &amp; Database&quot;: [0.75, 0.75]
+    &quot;Member 4: ML, DevOps &amp; QA&quot;: [0.85, 0.85]
+</code></pre>
+<h3>Detailed Task Division</h3>
+<h4>Member 1: Frontend &amp; Map Engineer (Leaflet &amp; Routing UI)</h4>
+<ul>
+<li><strong>Tasks</strong>:</li>
+<li>Optimize <code>app/templates/map.html</code> for Vercel static deployment.</li>
+<li>Refine Leaflet.js interactive map controls, custom sensory color markers (Calm, Moderate, Busy), and popups.</li>
+<li>Integrate Nominatim geocoding autocomplete UI (<code>origInput</code>, <code>destInput</code>).</li>
+<li>Render dual polyline paths: <strong>Shortest Route</strong> (grey line) vs. <strong>Calm Route</strong> (green line).</li>
+</ul>
+<h4>Member 2: UI/UX &amp; Privacy Specialist (Accessibility &amp; Auth)</h4>
+<ul>
+<li><strong>Tasks</strong>:</li>
+<li>Implement WebCrypto keypair generator in <code>app/static/auth.js</code>.</li>
+<li>Connect high-contrast mode toggle (<code>#contrastToggle</code>) and text scaling buttons (<code>#fontMinus</code>, <code>#fontPlus</code>).</li>
+<li>Build predictive forecast controls in <code>predict.html</code> (hour selection slider, overstimulation probability gauge).</li>
+<li>Ensure WCAG 2.1 AAA keyboard accessibility and screen-reader compatibility.</li>
+</ul>
+<h4>Member 3: Backend &amp; Database Engineer (Flask, Supabase &amp; Redis)</h4>
+<ul>
+<li><strong>Tasks</strong>:</li>
+<li>Harden Flask <code>app/server.py</code> for Gunicorn production deployment on Render.</li>
+<li>Populate Supabase PostgreSQL with 1.61M historical hourly counts and 103 sensor metadata records.</li>
+<li>Implement Upstash Redis caching for live City of Melbourne 1-minute sensor feed (<code>/api/sensors</code>).</li>
+<li>Optimize OSRM foot routing evaluator (<code>app/crowd.py</code>).</li>
+</ul>
+<h4>Member 4: ML, DevOps &amp; QA Lead (ONNX, Deployment &amp; CI/CD)</h4>
+<ul>
+<li><strong>Tasks</strong>:</li>
+<li>Export LightGBM quantile regression models (<code>src/models.py</code>) to ONNX binaries (<code>lgb_q50.onnx</code>, <code>lgb_q90.onnx</code>).</li>
+<li>Build light ONNX Runtime inference module replacing heavy <code>pandas</code>/<code>lightgbm</code> execution in production.</li>
+<li>Set up GitHub Actions CI/CD workflows for <code>main</code> (Prod) and <code>develop</code> (Dev).</li>
+<li>Deploy Vercel (Frontend) and Render (Backend) services with environment secret keys.</li>
+</ul>
+<hr />
+<h2>7. Deliverables Checklist for Final Submission</h2>
+<ul>
+<li>[x] <strong>Working Local Platform</strong>: Tested and running on <code>http://localhost:8000</code>.</li>
+<li>[x] <strong>Proven Map &amp; Routing Engine</strong>: Leaflet.js + CartoDB tiles + Nominatim + OSRM Foot Routing.</li>
+<li>[x] <strong>Production System Design Document</strong>: Complete specification in <code>docs/production_system_design_and_roadmap.md</code>.</li>
+<li>[ ] <strong>Decoupled Deployment</strong>: Frontend on Vercel static CDN, Backend on Render WSGI Web Service.</li>
+<li>[ ] <strong>Zero-PII Compliance</strong>: Client-side WebCrypto ECDSA anonymous token system.</li>
+<li>[ ] <strong>GitHub Commit History</strong>: Clean feature branching (<code>feature/*</code>) merged to <code>develop</code> and <code>main</code>.</li>
+</ul>
+</div>
+</body>
+</html>

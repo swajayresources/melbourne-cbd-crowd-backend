@@ -1,0 +1,16 @@
+{
+ "python": "3.14.0",
+ "platform": "Windows-11-10.0.26200-SP0",
+ "cpus": 20,
+ "xgboost": "3.3.0",
+ "lightgbm": "4.7.0",
+ "gpu": "NVIDIA GeForce RTX 3060 Laptop GPU, 6144 MiB",
+ "data": "synthetic",
+ "n_rows": 260312,
+ "n_sensors": 8,
+ "short_sensors": [
+  30,
+  31,
+  32
+ ]
+}

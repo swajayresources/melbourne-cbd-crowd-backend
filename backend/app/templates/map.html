@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Melbourne CBD Sensory Crowd Map</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="map-view-body">
+<header class="topbar">
+  <a class="brand" href="/">Melbourne CBD Sensory Map</a>
+  <nav aria-label="Main navigation">
+    <a href="/" aria-current="page">Real-Time Map</a>
+    <a href="/predict">Predict Future Crowd</a>
+    <a href="/help">Help</a>
+  </nav>
+  <div class="prefs" role="group" aria-label="Display settings">
+    <button id="fontMinus" aria-label="Smaller text">A-</button>
+    <button id="fontPlus" aria-label="Larger text">A+</button>
+    <button id="contrastToggle" aria-pressed="false">High contrast</button>
+  </div>
+</header>
+
+<main id="main" class="maps-wrapper">
+  <!-- Google-Maps-Style Floating Controls Sidebar -->
+  <aside class="maps-sidebar" aria-label="Map Control Panel">
+    <div class="sidebar-header">
+      <h1>Melbourne CBD Live Map</h1>
+      <p class="hint">Real-time sensory navigation for calm walking routes in Melbourne CBD.</p>
+      
+      <div class="statusline" aria-live="polite">
+        <span id="mapStatus" class="badge badge-ok">Live Feed Active</span>
+        <span id="routeStatus" class="badge badge-unknown">Enter locations to view route</span>
+      </div>
+    </div>
+
+    <!-- Search & Route Section -->
+    <div class="sidebar-section">
+      <h2>Plan Your Walk</h2>
+      <div class="field">
+        <label for="origInput">Where are you starting from?</label>
+        <div class="search-box">
+          <input type="text" id="origInput" placeholder="e.g. 455 Elizabeth St or Flinders St Station..." autocomplete="off">
+          <div id="origSuggestions" class="suggestions" hidden></div>
+        </div>
+      </div>
+
+      <div class="field" style="margin-top: 0.8rem;">
+        <label for="destInput">Where do you want to go?</label>
+        <div class="search-box">
+          <input type="text" id="destInput" placeholder="e.g. 350 Queen St or Bourke St Mall..." autocomplete="off">
+          <div id="destSuggestions" class="suggestions" hidden></div>
+        </div>
+      </div>
+
+      <div class="actions" style="margin-top: 1rem;">
+        <button type="button" id="planRouteBtn" class="primary" style="flex: 1;">Find Routes</button>
+        <button type="button" id="clearRouteBtn">Clear</button>
+      </div>
+    </div>
+
+    <!-- Sensory Status Legend Section -->
+    <div class="sidebar-section">
+      <h2>Live Sensory Status</h2>
+      <div class="sensory-legend-list">
+        <div class="legend-row"><span class="dot dot-low"></span> <strong>Calm (Quiet)</strong> — Low sensory load</div>
+        <div class="legend-row"><span class="dot dot-med"></span> <strong>Moderate Activity</strong> — Noticeable movement</div>
+        <div class="legend-row"><span class="dot dot-high"></span> <strong>Busy / Overstimulating</strong> — High crowd noise</div>
+      </div>
+      <p class="hint" style="margin-top: 0.6rem;">🔍 Zoom in on map to reveal live counts & street names.</p>
+    </div>
+
+    <!-- Route Results Section -->
+    <div id="routeResultsSection" class="sidebar-section" style="display: none;">
+      <h2>Route Comparison</h2>
+      <div id="routeCards" class="route-cards" aria-live="polite"></div>
+    </div>
+  </aside>
+
+  <!-- Full Map Canvas View -->
+  <section class="maps-canvas">
+    <div id="map" role="region" aria-label="Interactive real-time map of Melbourne CBD"></div>
+  </section>
+</main>
+
+<footer>
+  <p>Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> | City of Melbourne Open Data (CC BY 4.0)</p>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="/static/app.js"></script>
+<script src="/static/map.js"></script>
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Help — Melbourne Pedestrian Forecast</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="/">Melbourne CBD Sensory Map</a>
+  <nav aria-label="Main navigation">
+    <a href="/">Real-Time Map</a>
+    <a href="/predict">Predict Future Crowd</a>
+    <a href="/help" aria-current="page">Help</a>
+  </nav>
+  <div class="prefs" role="group" aria-label="Display settings">
+    <button id="fontMinus" aria-label="Smaller text">A-</button>
+    <button id="fontPlus" aria-label="Larger text">A+</button>
+    <button id="contrastToggle" aria-pressed="false">High contrast</button>
+  </div>
+</header>
+
+<main id="main">
+  <h1>Help & How Things Work</h1>
+
+  <section aria-labelledby="h-what">
+    <h2 id="h-what">What this app does</h2>
+    <p>This web application provides sensory-friendly map navigation for Melbourne CBD designed to help neurodivergent users find low-stimulation walking paths.</p>
+  </section>
+
+  <section aria-labelledby="h-how">
+    <h2 id="h-how">Core Features</h2>
+    <ol>
+      <li><strong>Real-Time Map:</strong> Displays live crowd conditions across Melbourne CBD using color-coded sensory dots (🟢 Calm, 🟡 Moderate, 🔴 Busy). Type starting & destination addresses to automatically compare the shortest path with recommended calm routes.</li>
+      <li><strong>Predict Future Crowd:</strong> Check whether any address or location in Melbourne CBD will be quiet or crowded at a specific future date & time using machine learning models.</li>
+    </ol>
+  </section>
+
+  <section aria-labelledby="h-read">
+    <h2 id="h-read">Sensory Status Labels</h2>
+    <ul>
+      <li><strong>🟢 Calm (Quiet):</strong> Low crowd density — peaceful, low-noise environment.</li>
+      <li><strong>🟡 Moderate Activity:</strong> Noticeable movement and activity.</li>
+      <li><strong>🔴 Busy / Overstimulating:</strong> High crowd density — potential sound & visual stimulation.</li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="h-a11y">
+    <h2 id="h-a11y">Accessibility Controls</h2>
+    <ul>
+      <li><strong>High contrast:</strong> The button in the top-right switches to a high-contrast theme. Your choice is remembered.</li>
+      <li><strong>Text size:</strong> The A- and A+ buttons adjust all text sizes.</li>
+      <li><strong>No animations or flashing:</strong> Motion-free design to prevent sensory overload.</li>
+      <li><strong>Colour is never the only cue:</strong> Every sensory level includes an explicit text badge.</li>
+      <li><strong>Keyboard navigation:</strong> Fully navigable using Tab and Enter/Space.</li>
+    </ul>
+  </section>
+</main>
+
+<footer>
+  <p>Data: City of Melbourne Open Data (CC BY 4.0) — Pedestrian Counting System.</p>
+</footer>
+<script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+# Python bytecode & cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environments
+.env
+.env.local
+venv/
+env/
+ENV/
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+server_err.log
+server_out.log
+
+# Large Datasets (>100MB GitHub limit)
+data/raw/hourly_counts.csv
+*.csv

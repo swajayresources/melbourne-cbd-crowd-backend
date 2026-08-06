@@ -1,0 +1,168 @@
+/* Melbourne Pedestrian Forecast — accessible, low-stimulation styling.
+   Defaults: no animation, no decoration, clear focus, large hit targets. */
+
+:root {
+  --bg: #ffffff;
+  --fg: #1a1a1a;
+  --muted: #4a4a4a;
+  --line: #c9c9c9;
+  --accent: #0b5cad;
+  --accent-fg: #ffffff;
+  --band-fill: rgba(11, 92, 173, 0.18);
+  --ok-bg: #e6f4ea;  --ok-fg: #0b5c21;
+  --warn-bg: #fdf3d7; --warn-fg: #7a5c00;
+  --err-bg: #fbe9e7; --err-fg: #8c1d14;
+  --code-bg: #f4f4f4;
+
+  --low-bg: #e6f4ea; --low-fg: #0b5c21;
+  --med-bg: #fff3cd; --med-fg: #856404;
+  --high-bg: #f8d7da; --high-fg: #721c24;
+
+  font-size: 18px;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  line-height: 1.55;
+  max-width: 1100px;
+  margin-inline: auto;
+  padding: 0 1rem 3rem;
+}
+
+body.map-view-body {
+  max-width: 1400px;
+}
+
+/* ---- high contrast variant (explicit user choice, remembered) ---- */
+body.hc { --bg: #000000; --fg: #ffffff; --muted: #d9d9d9; --line: #6b6b6b;
+  --accent: #66b5ff; --accent-fg: #000000; --band-fill: rgba(102,181,255,0.30);
+  --ok-bg: #0b2412; --ok-fg: #7dffa8; --warn-bg: #2a2100; --warn-fg: #ffd966;
+  --err-bg: #2a0d09; --err-fg: #ff9c91; --code-bg: #141414;
+  --low-bg: #0b2412; --low-fg: #7dffa8; --med-bg: #2a2100; --med-fg: #ffd966;
+  --high-bg: #2a0d09; --high-fg: #ff9c91; }
+
+/* ---- font size (user choice, remembered) ---- */
+body.size-16 { font-size: 16px; }
+body.size-20 { font-size: 20px; }
+
+/* ---- focus, never rely on colour alone ---- */
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+a { color: var(--accent); text-underline-offset: 3px; }
+
+/* ---- top bar ---- */
+.topbar { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;
+  justify-content: space-between; border-bottom: 2px solid var(--line);
+  padding: 0.6rem 0; margin-bottom: 1rem; }
+.brand { font-weight: 700; color: var(--fg); text-decoration: none; font-size: 1.15rem; }
+.topbar nav { display: flex; gap: 0.25rem; flex-wrap: wrap; }
+.topbar nav a { color: var(--fg); text-decoration: none; padding: 0.35rem 0.7rem;
+  border-radius: 4px; }
+.topbar nav a[aria-current="page"] { background: var(--accent); color: var(--accent-fg); }
+.prefs { display: flex; gap: 0.4rem; }
+
+button { font: inherit; color: var(--fg); background: var(--code-bg);
+  border: 2px solid var(--line); border-radius: 6px; padding: 0.45rem 0.9rem;
+  cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+button[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent); }
+
+/* ---- badges ---- */
+.badge { display: inline-block; border: 2px solid var(--line); border-radius: 999px;
+  padding: 0.15rem 0.75rem; margin-right: 0.5rem; font-size: 0.9rem; font-weight: 600; }
+.badge-ok { background: var(--ok-bg); color: var(--ok-fg); border-color: var(--ok-fg); }
+.badge-warn { background: var(--warn-bg); color: var(--warn-fg); border-color: var(--warn-fg); }
+.badge-err { background: var(--err-bg); color: var(--err-fg); border-color: var(--err-fg); }
+.badge-unknown { background: var(--code-bg); color: var(--muted); }
+
+.badge-low { background: var(--low-bg); color: var(--low-fg); border-color: var(--low-fg); }
+.badge-med { background: var(--med-bg); color: var(--med-fg); border-color: var(--med-fg); }
+.badge-high { background: var(--high-bg); color: var(--high-fg); border-color: var(--high-fg); }
+
+/* ---- Google Maps Layout (Sidebar + Full Canvas) ---- */
+.maps-wrapper { display: flex; gap: 1.2rem; min-height: 740px; align-items: stretch; flex-wrap: wrap; margin-top: 0.5rem; }
+.maps-sidebar { width: 400px; max-width: 100%; display: flex; flex-direction: column; gap: 1rem; max-height: 760px; overflow-y: auto; padding-right: 0.2rem; }
+.maps-canvas { flex: 1; min-width: 320px; position: relative; height: 760px; border-radius: 8px; overflow: hidden; }
+
+.sidebar-header { border: 2px solid var(--line); border-radius: 8px; padding: 1rem; background: var(--bg); }
+.sidebar-header h1 { font-size: 1.3rem; margin: 0 0 0.3rem 0; }
+
+.sidebar-section { border: 2px solid var(--line); border-radius: 8px; padding: 1rem; background: var(--bg); }
+.sidebar-section h2 { font-size: 1.1rem; margin: 0 0 0.6rem 0; border-bottom: 1px solid var(--line); padding-bottom: 0.3rem; }
+
+.sensory-legend-list { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.4rem; }
+.legend-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; }
+.dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 2px solid #000; flex-shrink: 0; }
+.dot-low { background: #28a745; }
+.dot-med { background: #ffc107; }
+.dot-high { background: #dc3545; }
+
+/* ---- form controls & grid ---- */
+main { display: block; }
+h1 { margin: 0.4rem 0 0.6rem; }
+h2 { margin: 2rem 0 0.4rem; border-bottom: 1px solid var(--line); padding-bottom: 0.2rem; }
+p { margin: 0.4rem 0; }
+.lead { font-size: 1.05rem; }
+.hint { color: var(--muted); font-size: 0.92rem; }
+.statusline { margin: 0.6rem 0 1rem; }
+
+.controls { display: grid; gap: 1rem; border: 2px solid var(--line);
+  border-radius: 8px; padding: 1rem; margin: 1rem 0; }
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+.grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+
+.field { display: flex; flex-direction: column; gap: 0.3rem; }
+.fieldlabel, label { font-weight: 700; }
+select, input[type="text"], input[type="datetime-local"] {
+  font: inherit; padding: 0.45rem; border: 2px solid var(--line);
+  border-radius: 6px; background: var(--bg); color: var(--fg); width: 100%; box-sizing: border-box; }
+.pills { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.pill.active { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.checkrow { display: inline-flex; align-items: center; gap: 0.5rem; }
+.actions { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 0.8rem; }
+.align-end { align-self: flex-end; }
+
+/* ---- search box & suggestions ---- */
+.search-box { position: relative; width: 100%; }
+.suggestions { position: absolute; top: 100%; left: 0; right: 0; background: var(--bg);
+  border: 2px solid var(--accent); border-radius: 0 0 6px 6px; z-index: 2000;
+  max-height: 220px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+.suggestion-item { padding: 0.5rem 0.8rem; cursor: pointer; border-bottom: 1px solid var(--line); }
+.suggestion-item:last-child { border-bottom: none; }
+.suggestion-item:hover, .suggestion-item:focus { background: var(--code-bg); outline: none; }
+
+/* ---- map & legend ---- */
+#map { width: 100%; height: 100%; min-height: 520px; border: 2px solid var(--line); border-radius: 8px; z-index: 1; }
+
+/* ---- route cards & callout ---- */
+.route-cards { display: flex; flex-direction: column; gap: 1rem; }
+.route-card { border: 2px solid var(--line); border-radius: 8px; padding: 1rem;
+  background: var(--bg); display: flex; flex-direction: column; gap: 0.5rem; }
+.route-card.fastest { border-color: var(--accent); }
+.route-card.least-crowded { border-color: #0b5c21; }
+.card-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.4rem; }
+.route-metrics { font-size: 1.05rem; font-weight: 600; margin: 0.2rem 0; }
+.remarks-list { margin: 0.3rem 0; padding-left: 1.1rem; }
+.remarks-list li { margin-bottom: 0.2rem; font-size: 0.92rem; }
+
+.callout-box { border: 2px solid var(--line); border-radius: 8px; padding: 1.2rem; background: var(--code-bg); }
+.callout-box h3 { margin: 0 0 0.4rem 0; }
+
+/* ---- results ---- */
+.result { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.bigbox { border: 2px solid var(--line); border-radius: 8px; padding: 1rem; }
+.biglabel { color: var(--muted); margin: 0; }
+.bignumber { font-size: 2.4rem; font-weight: 700; margin: 0.2rem 0; }
+.bigsub { color: var(--muted); font-size: 0.9rem; margin: 0; }
+.sentence { font-size: 1.05rem; margin-top: 0.4rem; }
+
+footer { margin-top: 3rem; border-top: 1px solid var(--line); padding-top: 0.8rem;
+  color: var(--muted); font-size: 0.85rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}

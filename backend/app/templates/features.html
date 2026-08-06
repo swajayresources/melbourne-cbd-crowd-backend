@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Features — Melbourne Pedestrian Forecast</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="/">Melbourne Pedestrian Forecast</a>
+  <nav aria-label="Main navigation">
+    <a href="/">Forecast</a>
+    <a href="/map">Map</a>
+    <a href="/predict">Predict</a>
+    <a href="/models">Models</a>
+    <a href="/features" aria-current="page">Features</a>
+    <a href="/help">Help</a>
+  </nav>
+  <div class="prefs" role="group" aria-label="Display settings">
+    <button id="fontMinus" aria-label="Smaller text">A-</button>
+    <button id="fontPlus" aria-label="Larger text">A+</button>
+    <button id="contrastToggle" aria-pressed="false">High contrast</button>
+  </div>
+</header>
+
+<main id="main">
+  <h1>Which features matter most?</h1>
+  <p class="lead">Both models were given the same 12 features. This page shows how much each one contributed (gain importance, from the 1-hour models).</p>
+
+  <section aria-labelledby="h-imp">
+    <h2 id="h-imp">Feature importance — LightGBM vs XGBoost</h2>
+    <div id="impTable" class="mono"></div>
+    <p id="impStats" class="hint"></p>
+  </section>
+
+  <section aria-labelledby="h-feat">
+    <h2 id="h-feat">What each feature means</h2>
+    <dl class="defs">
+      <dt>lag_24</dt><dd>How many people passed in the same hour yesterday. The single most important feature.</dd>
+      <dt>lag_168</dt><dd>How many people passed in the same hour one week ago.</dd>
+      <dt>lag_1</dt><dd>How many people passed in the previous hour.</dd>
+      <dt>hour</dt><dd>Which hour of the day it is (morning and evening peaks matter).</dd>
+      <dt>roll_24_mean / roll_168_mean / roll_672_mean</dt><dd>Average count over the last day / week / month.</dd>
+      <dt>location_code</dt><dd>Which sensor — different streets have different traffic levels.</dd>
+      <dt>is_weekend, dow</dt><dd>Whether it is a weekend and which weekday.</dd>
+      <dt>month</dt><dd>Time of year.</dd>
+      <dt>is_public_holiday</dt><dd>Victorian public holiday. Important in practice, but the models learned little from it because holidays are rare and their effect is mostly absorbed by other features.</dd>
+    </dl>
+  </section>
+</main>
+
+<footer>
+  <p>Data: City of Melbourne Open Data (CC BY 4.0) — Pedestrian Counting System.</p>
+</footer>
+<script src="/static/app.js"></script>
+<script src="/static/features.js"></script>
+</body>
+</html>

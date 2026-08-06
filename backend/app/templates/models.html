@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Models — Melbourne Pedestrian Forecast</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="/">Melbourne Pedestrian Forecast</a>
+  <nav aria-label="Main navigation">
+    <a href="/">Forecast</a>
+    <a href="/map">Map</a>
+    <a href="/predict">Predict</a>
+    <a href="/models" aria-current="page">Models</a>
+    <a href="/features">Features</a>
+    <a href="/help">Help</a>
+  </nav>
+  <div class="prefs" role="group" aria-label="Display settings">
+    <button id="fontMinus" aria-label="Smaller text">A-</button>
+    <button id="fontPlus" aria-label="Larger text">A+</button>
+    <button id="contrastToggle" aria-pressed="false">High contrast</button>
+  </div>
+</header>
+
+<main id="main">
+  <h1>How the two models compare</h1>
+  <p class="lead">These are the numbers from the offline experiment on real City of Melbourne data (test period: 2026-03-01 to 2026-08-02, 344,506 hourly records).</p>
+
+  <section aria-labelledby="h-env">
+    <h2 id="h-env">Environment</h2>
+    <div id="env" class="mono"></div>
+  </section>
+
+  <section aria-labelledby="h-point">
+    <h2 id="h-point">Point forecasts (how close is the single predicted number?)</h2>
+    <p class="hint">MAE = average absolute error in pedestrians per hour. Lower is better. WMAPE = error as a share of total pedestrian flow.</p>
+    <div id="pointTable" class="mono"></div>
+  </section>
+
+  <section aria-labelledby="h-interval">
+    <h2 id="h-interval">80% intervals (how trustworthy is the band?)</h2>
+    <p class="hint">Coverage is the key number: the share of times the true count fell inside the predicted 80% band. 80% would be perfect.</p>
+    <div id="intervalTable" class="mono"></div>
+  </section>
+
+  <section aria-labelledby="h-train">
+    <h2 id="h-train">Training time (CPU vs GPU, 12 models each)</h2>
+    <div id="trainTable" class="mono"></div>
+  </section>
+
+  <section aria-labelledby="h-serve">
+    <h2 id="h-serve">Serving on a CPU-only host</h2>
+    <p class="hint">Single ms = latency for one forecast request. File size = one model on disk.</p>
+    <div id="serveTable" class="mono"></div>
+  </section>
+
+  <section aria-labelledby="h-cal">
+    <h2 id="h-cal">Conformal calibration applied in this app</h2>
+    <p class="hint">Computed on the validation block (2025-11-01 to 2026-02-28). The adjustment widens each band until coverage reaches 80%.</p>
+    <div id="calTable" class="mono"></div>
+  </section>
+</main>
+
+<footer>
+  <p>Data: City of Melbourne Open Data (CC BY 4.0) — Pedestrian Counting System.</p>
+</footer>
+<script src="/static/app.js"></script>
+<script src="/static/models.js"></script>
+</body>
+</html>

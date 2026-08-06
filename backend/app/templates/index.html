@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Melbourne Pedestrian Forecast</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="/">Melbourne Pedestrian Forecast</a>
+  <nav aria-label="Main navigation">
+    <a href="/" aria-current="page">Forecast</a>
+    <a href="/map">Map</a>
+    <a href="/predict">Predict</a>
+    <a href="/models">Models</a>
+    <a href="/features">Features</a>
+    <a href="/help">Help</a>
+  </nav>
+  <div class="prefs" role="group" aria-label="Display settings">
+    <button id="fontMinus" aria-label="Smaller text">A-</button>
+    <button id="fontPlus" aria-label="Larger text">A+</button>
+    <button id="contrastToggle" aria-pressed="false">High contrast</button>
+  </div>
+</header>
+
+<main id="main">
+  <section aria-labelledby="h1">
+    <h1 id="h1">Pedestrian forecast</h1>
+    <p class="lead" id="oneLiner">Loading…</p>
+
+    <div class="statusline" aria-live="polite">
+      <span id="dataStatus" class="badge badge-unknown">checking data…</span>
+      <span id="feedStatus" class="badge badge-unknown">checking live feed…</span>
+    </div>
+
+    <form id="controls" class="controls" onsubmit="return false;">
+      <div class="field">
+        <label for="sensor">Sensor</label>
+        <select id="sensor" name="sensor"></select>
+        <p class="hint" id="sensorHint"></p>
+      </div>
+      <div class="field" role="group" aria-labelledby="horizonLabel">
+        <span id="horizonLabel" class="fieldlabel">Forecast horizon</span>
+        <div class="pills" id="horizonPills">
+          <button type="button" class="pill active" data-h="1">1 hour ahead</button>
+          <button type="button" class="pill" data-h="6">6 hours ahead</button>
+          <button type="button" class="pill" data-h="24">24 hours ahead</button>
+        </div>
+      </div>
+      <div class="field" role="group" aria-labelledby="modelLabel">
+        <span id="modelLabel" class="fieldlabel">Forecast model</span>
+        <div class="pills" id="modelPills">
+          <button type="button" class="pill active" data-fw="lgb">LightGBM (recommended)</button>
+          <button type="button" class="pill" data-fw="xgb">XGBoost (comparison)</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="calToggle" class="checkrow">
+          <input type="checkbox" id="calToggle" checked>
+          <span>Calibrate interval to 80% coverage (recommended)</span>
+        </label>
+        <p class="hint">Without calibration the 80% band only covers about 74% of real outcomes (measured on this data).</p>
+      </div>
+      <div class="field actions">
+        <button type="button" id="refresh" class="primary">Update forecast</button>
+        <label for="autoRefresh" class="checkrow">
+          <input type="checkbox" id="autoRefresh">
+          <span>Refresh automatically every 5 minutes</span>
+        </label>
+        <p class="hint">Off by default — the page only changes when you ask it to.</p>
+      </div>
+    </form>
+  </section>
+
+  <section aria-labelledby="h2">
+    <h2 id="h2">Forecast result</h2>
+    <div class="result" aria-live="polite">
+      <div class="bigbox">
+        <p class="biglabel">Most likely count at the forecast time</p>
+        <p class="bignumber" id="pointPred">—</p>
+        <p class="bigsub" id="pointWhen"></p>
+      </div>
+      <div class="bigbox">
+        <p class="biglabel">80% likely range</p>
+        <p class="bignumber" id="bandPred">—</p>
+        <p class="bigsub" id="bandNote"></p>
+      </div>
+    </div>
+    <p class="sentence" id="sentence"></p>
+    <figure aria-label="Chart of pedestrian counts">
+      <div id="chart" role="img" aria-label="Line chart of hourly pedestrian counts for the selected sensor, with the forecast range shaded"></div>
+      <figcaption id="chartCaption">Last 7 days of counts, with the forecast range for the selected horizon.</figcaption>
+    </figure>
+  </section>
+
+  <section aria-labelledby="h3">
+    <h2 id="h3">Live sensor feed</h2>
+    <p class="hint">The per-minute feed is aggregated to hourly and used as the freshest signal. It is not used for training.</p>
+    <div class="feedbox">
+      <p><strong id="feedDetail">Loading…</strong></p>
+      <p class="hint" id="feedHint"></p>
+      <button type="button" id="refreshFeed" class="secondary">Refresh live feed now</button>
+      <label for="demoFeed" class="checkrow">
+        <input type="checkbox" id="demoFeed">
+        <span>Use demo feed (simulates the known duplicate bug on sensors 67/68/69)</span>
+      </label>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <p>Data: City of Melbourne Open Data (CC BY 4.0) — Pedestrian Counting System.</p>
+  <p>Models: trained on real hourly counts (2024-08 to 2026-08), 103 sensors. <a href="/models">See how the models compare</a>.</p>
+</footer>
+<script src="/static/app.js"></script>
+</body>
+</html>

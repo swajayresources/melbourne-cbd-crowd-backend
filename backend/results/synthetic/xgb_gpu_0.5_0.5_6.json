@@ -1,0 +1,23 @@
+{
+ "horizon": 6,
+ "objective": 0.5,
+ "alpha": 0.5,
+ "n_test": 23048,
+ "pinball": 28.944734573364258,
+ "batch_ms_per_row": 0.0003985551891669718,
+ "single_ms_mean": 4.27766433335061,
+ "single_ms_p95": 4.703665000170076,
+ "file_size_bytes": 3796705,
+ "serving_rss_mb": 0.0,
+ "best_iter": 235,
+ "train_time_s": 2.9248371000001043,
+ "framework": "xgb",
+ "device": "gpu",
+ "coverage": 0.8032801110725443,
+ "interval_pinball": 14.074016571044922,
+ "interval_width": 211.76512145996094,
+ "short_coverage": 0.8192757144510008,
+ "short_width": 212.87847900390625,
+ "long_coverage": 0.7936827490454703,
+ "long_width": 211.0971221923828
+}

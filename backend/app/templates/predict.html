@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Predict Future Crowd & Calmness — Melbourne Pedestrian Forecast</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="/">Melbourne CBD Sensory Map</a>
+  <nav aria-label="Main navigation">
+    <a href="/">Real-Time Map</a>
+    <a href="/predict" aria-current="page">Predict Future Crowd</a>
+    <a href="/help">Help</a>
+  </nav>
+  <div class="prefs" role="group" aria-label="Display settings">
+    <button id="fontMinus" aria-label="Smaller text">A-</button>
+    <button id="fontPlus" aria-label="Larger text">A+</button>
+    <button id="contrastToggle" aria-pressed="false">High contrast</button>
+  </div>
+</header>
+
+<main id="main">
+  <section aria-labelledby="h-pred">
+    <h1 id="h-pred">Predict Future Crowd & Area Calmness</h1>
+    <p class="lead">Check how quiet or crowded any Melbourne CBD area will be at a specific future date and time using trained Machine Learning models.</p>
+
+    <div class="controls" role="region" aria-label="Prediction Form">
+      <div class="grid-2">
+        <div class="field">
+          <label for="destSearch">Where do you want to check?</label>
+          <div class="search-box">
+            <input type="text" id="destSearch" placeholder="e.g. 455 Elizabeth St, 350 Queen St, Bourke St Mall..." autocomplete="off">
+            <div id="destPredictSuggestions" class="suggestions" hidden></div>
+          </div>
+          <p class="hint">Type any address, friend's house, or landmark in Melbourne CBD</p>
+        </div>
+
+        <div class="field">
+          <label for="predTime">Target Date & Time</label>
+          <input type="datetime-local" id="predTime">
+          <p class="hint">Select the future hour you plan to be there</p>
+        </div>
+      </div>
+
+      <div class="field actions" style="margin-top: 1rem;">
+        <button type="button" id="predictBtn" class="primary">Predict Crowd Level</button>
+      </div>
+    </div>
+
+    <!-- Prediction Results Card -->
+    <section id="predictResultsSection" aria-labelledby="h-res" style="display: none; margin-top: 2rem;">
+      <h2 id="h-res">Predicted Status for <span id="resLocationName">...</span></h2>
+
+      <div class="result" aria-live="polite">
+        <div class="bigbox">
+          <p class="biglabel">Predicted Sensory Status</p>
+          <p class="bignumber" id="resLevel">—</p>
+          <p class="bigsub" id="resAdviceNote"></p>
+        </div>
+
+        <div class="bigbox">
+          <p class="biglabel">Expected Pedestrian Flow</p>
+          <p class="bignumber" id="resPoint">—</p>
+          <p class="bigsub" id="resTimeLabel"></p>
+        </div>
+
+        <div class="bigbox">
+          <p class="biglabel">80% Likely Range</p>
+          <p class="bignumber" id="resBand">—</p>
+          <p class="bigsub">8 out of 10 times actual flow lands inside</p>
+        </div>
+      </div>
+
+      <div class="callout-box" style="margin-top: 1.5rem;" aria-live="polite">
+        <h3>Overstimulation Probability Estimate</h3>
+        <p class="sentence" id="resProbSentence">Calculating probability…</p>
+        <p class="hint">Derived from LightGBM quantile regression models trained on historical City of Melbourne pedestrian counts.</p>
+        
+        <div style="margin-top: 1.2rem; border-top: 1px solid var(--line); padding-top: 1rem;">
+          <button type="button" id="toggleTravelBtn" class="primary">Plan Travel Here at This Time</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Travel Route Section (Appears when Plan Travel is clicked) -->
+    <section id="futureTravelSection" aria-labelledby="h-travel" style="display: none; margin-top: 2rem;">
+      <h2>Plan Calm Route for <span id="travelTimeTitle">Target Time</span></h2>
+      <p class="lead">We'll calculate the calmest walking path taking into account predicted crowd levels at your travel time.</p>
+
+      <div class="controls" role="region" aria-label="Future Route Form">
+        <div class="grid-2">
+          <div class="field">
+            <label for="travelOrigInput">Where are you starting from?</label>
+            <div class="search-box">
+              <input type="text" id="travelOrigInput" placeholder="e.g. Southern Cross Station..." autocomplete="off">
+              <div id="travelOrigSuggestions" class="suggestions" hidden></div>
+            </div>
+          </div>
+
+          <div class="field actions align-end">
+            <button type="button" id="calcFutureRouteBtn" class="primary">Calculate Calm Route</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Map & Route Results -->
+      <div id="futureMapContainer" class="map-container" style="display: none; margin-top: 1rem;">
+        <div id="predictMap" style="width: 100%; height: 420px; border: 2px solid var(--line); border-radius: 8px;"></div>
+      </div>
+
+      <div id="futureRouteResults" class="route-cards" style="margin-top: 1.5rem;" aria-live="polite"></div>
+    </section>
+  </section>
+</main>
+
+<footer>
+  <p>Melbourne Pedestrian Crowd Map | City of Melbourne Open Data (CC BY 4.0)</p>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="/static/app.js"></script>
+<script src="/static/predict.js"></script>
+</body>
+</html>
