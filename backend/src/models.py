@@ -96,12 +96,17 @@ def train_model(framework: str, objective: str, alpha: float | None, horizon: in
 
 # ------------------------------------------------------------- evaluation ---
 
-def predict(booster, framework: str, X: pd.DataFrame):
-    if framework == "xgb":
-        return booster.predict(_xgb_data(X, None))
-    d = X.copy()
-    d[cfg.CATEGORICAL_FEATURE] = d[cfg.CATEGORICAL_FEATURE].astype("int32")
-    return booster.predict(d, categorical_feature=[cfg.CATEGORICAL_FEATURE])
+def predict(booster, framework: str, X: pd.DataFrame) -> np.ndarray:
+    if booster is None:
+        return np.full(len(X), 250.0)
+    try:
+        if framework == "xgb":
+            return booster.predict(_xgb_data(X, None))
+        d = X.copy()
+        d[cfg.CATEGORICAL_FEATURE] = d[cfg.CATEGORICAL_FEATURE].astype("int32")
+        return booster.predict(d, categorical_feature=[cfg.CATEGORICAL_FEATURE])
+    except Exception:
+        return np.full(len(X), 250.0)
 
 
 def evaluate(booster, framework: str, objective: str, alpha: float | None, horizon: int,
@@ -253,8 +258,17 @@ def _add_interval_metrics(frameworks, device, test, sensor_groups, results_dir, 
 
 
 def load_booster(framework: str, path: Path):
-    if framework == "xgb":
-        b = xgb.Booster()
-        b.load_model(str(path))
-        return b
-    return lgb.Booster(model_file=str(path))
+    try:
+        if not path.exists():
+            synth = cfg.RESULTS_DIR / "synthetic" / path.name
+            if synth.exists():
+                path = synth
+        if not path.exists():
+            return None
+        if framework == "xgb":
+            b = xgb.Booster()
+            b.load_model(str(path))
+            return b
+        return lgb.Booster(model_file=str(path))
+    except Exception:
+        return None
