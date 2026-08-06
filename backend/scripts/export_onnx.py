@@ -31,18 +31,27 @@ def export_models_to_onnx():
     converted_count = 0
     for model_path in model_files:
         out_onnx = output_dir / f"{model_path.stem}.onnx"
-        if onnx_tools_available and model_path.stem.startswith("lgb"):
-            try:
+        if not onnx_tools_available:
+            continue
+        try:
+            initial_types = [("input", FloatTensorType([None, len(cfg.FEATURES)]))]
+            if model_path.stem.startswith("lgb"):
+                import lightgbm as lgb
                 booster = lgb.Booster(model_file=str(model_path))
-                initial_types = [("input", FloatTensorType([None, len(cfg.FEATURES)]))]
                 onnx_model = onnxmltools.convert_lightgbm(booster, initial_types=initial_types)
-                onnxmltools.utils.save_model(onnx_model, str(out_onnx))
-                print(f"[EXPORTED] {out_onnx.name}")
-                converted_count += 1
-            except Exception as e:
-                print(f"[SKIP] Failed to convert {model_path.name}: {e}")
-        else:
-            print(f"[INFO] Prepared export path for: {out_onnx.name}")
+            elif model_path.stem.startswith("xgb"):
+                import xgboost as xgb
+                booster = xgb.Booster()
+                booster.load_model(str(model_path))
+                onnx_model = onnxmltools.convert_xgboost(booster, initial_types=initial_types)
+            else:
+                continue
+
+            onnxmltools.utils.save_model(onnx_model, str(out_onnx))
+            print(f"[EXPORTED] {out_onnx.name}")
+            converted_count += 1
+        except Exception as e:
+            print(f"[SKIP] Failed to convert {model_path.name}: {e}")
 
     print(f"ONNX export completed. {converted_count} models exported to {output_dir}")
 

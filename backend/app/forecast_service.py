@@ -26,6 +26,8 @@ from src.models import location_code_map, load_booster, predict
 from src.features import _calendar_features, build_features
 from src.data.load import get_counts, fetch_past_hour_feed, simulate_feed_with_known_dups
 
+from app.services.onnx_service import ONNXInferenceEngine
+
 FEATURE_COLS = cfg.FEATURES
 CALIBRATION_CACHE = cfg.RESULTS_DIR / "calibration.json"
 
@@ -41,6 +43,7 @@ class Service:
         self.codes = location_code_map(self.counts)
         self.boosters = self._load_boosters()
         self.calibration = self._load_calibration()
+        self.onnx_engine = ONNXInferenceEngine()
         self.feed = None          # latest live feed snapshot
         self.feed_meta = dict(status="not_fetched", last_update=None, dups_removed=0)
 
@@ -137,11 +140,28 @@ class Service:
         feed_hourly = self.feed if self.feed is not None else None
         row = make_features_row(self.counts, self.codes, location_id, at, feed_hourly)
 
+    def predict_row(self, fw: str, h: int, key: Any, row: pd.DataFrame) -> float:
+        if self.onnx_engine and self.onnx_engine.is_available():
+            model_name = f"{fw}_cpu_point_None_{h}" if key == "point" else f"{fw}_cpu_{key}_{key}_{h}"
+            res = self.onnx_engine.predict(model_name, row.to_numpy())
+            if res is not None and len(res) > 0:
+                return float(np.clip(res[0], 0, None))
+        booster = self.get_booster(fw, h, key)
+        return float(np.clip(predict(booster, fw, row), 0, None)[0])
+
+    # -- forecasting ---------------------------------------------------------
+    def forecast(self, location_id: int, at: pd.Timestamp | None = None,
+                 frameworks: tuple = ("lgb", "xgb")) -> dict:
+        """Point + q10/q50/q90 + raw & calibrated 80% bands for all horizons."""
+        if location_id not in set(self.counts["location_id"]):
+            raise KeyError(f"unknown sensor {location_id}")
+        at = pd.Timestamp(at) if at is not None else pd.Timestamp.now().floor("h")
+        feed_hourly = self.feed if self.feed is not None else None
+        row = make_features_row(self.counts, self.codes, location_id, at, feed_hourly)
+
         def band(fw, h, mode):
-            b10 = self.get_booster(fw, h, 0.1)
-            b90 = self.get_booster(fw, h, 0.9)
-            q10 = float(np.clip(predict(b10, fw, row), 0, None)[0])
-            q90 = float(np.clip(predict(b90, fw, row), 0, None)[0])
+            q10 = self.predict_row(fw, h, 0.1, row)
+            q90 = self.predict_row(fw, h, 0.9, row)
             if mode == "raw":
                 return dict(lo=round(q10, 1), hi=round(q90, 1))
             adj = float(self.calibration.get(f"{fw}_{h}", 0.0))
@@ -151,13 +171,11 @@ class Service:
         for h in cfg.HORIZONS:
             out[str(h)] = {}
             for fw in frameworks:
-                b_pt = self.get_booster(fw, h, "point")
-                b_q50 = self.get_booster(fw, h, 0.5)
+                pt_val = self.predict_row(fw, h, "point", row)
+                q50_val = self.predict_row(fw, h, 0.5, row)
                 out[str(h)][fw] = dict(
-                    point=round(float(np.clip(
-                        predict(b_pt, fw, row), 0, None)[0]), 1),
-                    q50=round(float(np.clip(
-                        predict(b_q50, fw, row), 0, None)[0]), 1),
+                    point=round(pt_val, 1),
+                    q50=round(q50_val, 1),
                     band_raw=band(fw, h, "raw"),
                     band_cal=band(fw, h, "cal"),
                 )
