@@ -79,14 +79,18 @@ class Service:
 
     # -- models ----------------------------------------------------------
     def _load_boosters(self) -> dict:
-        dirs = cfg.RESULTS_DIR / self.data
-        out = {}
-        for fw in ("lgb", "xgb"):
-            for h in cfg.HORIZONS:
-                out[(fw, h, "point")] = load_booster(fw, dirs / f"{fw}_cpu_point_None_{h}.model")
-                for a in cfg.ALPHAS:
-                    out[(fw, h, a)] = load_booster(fw, dirs / f"{fw}_cpu_{a}_{a}_{h}.model")
-        return out
+        return {}
+
+    def get_booster(self, fw: str, h: int, key: Any):
+        cache_key = (fw, h, key)
+        if cache_key not in self.boosters:
+            dirs = cfg.RESULTS_DIR / self.data
+            if key == "point":
+                fname = f"{fw}_cpu_point_None_{h}.model"
+            else:
+                fname = f"{fw}_cpu_{key}_{key}_{h}.model"
+            self.boosters[cache_key] = load_booster(fw, dirs / fname)
+        return self.boosters[cache_key]
 
     # -- calibration -------------------------------------------------------
     def _load_calibration(self) -> dict:
@@ -98,45 +102,42 @@ class Service:
         print("computing conformal calibration on validation block (one-time)...")
         t0 = time.perf_counter()
         feats, _ = build_features(self.counts, self.codes)
-        val = feats[(feats["datetime"] >= pd.Timestamp(cfg.VAL_START)) &
-                    (feats["datetime"] < pd.Timestamp(cfg.TEST_START))]
-        cal = {}
-        for fw in ("lgb", "xgb"):
-            for h in cfg.HORIZONS:
-                y = val[f"target_{h}"].to_numpy()
-                X = val[FEATURE_COLS]
-                q10 = np.clip(predict(self.boosters[(fw, h, 0.1)], fw, X), 0, None)
-                q90 = np.clip(predict(self.boosters[(fw, h, 0.9)], fw, X), 0, None)
-                scores = np.maximum(q10 - y, y - q90).clip(0, None)
-                n = len(scores)
-                k = int(np.ceil(0.8 * (n + 1)))
-                cal[f"{fw}_{h}"] = float(np.sort(scores)[min(k, n) - 1])
-        CALIBRATION_CACHE.write_text(json.dumps(cal, indent=1))
-        print(f"calibration computed in {time.perf_counter() - t0:.0f}s")
-        return cal
+        train, val, _ = make_splits(feats)
+        calib = {}
+        for h in cfg.HORIZONS:
+            for fw in ("lgb", "xgb"):
+                b10 = self.get_booster(fw, h, 0.1)
+                b90 = self.get_booster(fw, h, 0.9)
+                cols = cfg.FEATURES
+                q10 = predict(b10, fw, val[cols])
+                q90 = predict(b90, fw, val[cols])
+                target = val[f"target_{h}"]
+                scores = np.maximum(q10 - target, target - q90)
+                adj = float(np.percentile(scores.dropna(), 80))
+                calib[f"{fw}_{h}"] = round(adj, 2)
+        print(f"conformal calibration done in {time.perf_counter() - t0:.1f}s: {calib}")
+        CALIBRATION_CACHE.parent.mkdir(parents=True, exist_ok=True)
+        CALIBRATION_CACHE.write_text(json.dumps(calib, indent=2))
+        return calib
 
-    # -- live feed ----------------------------------------------------------
+    # -- live feed -----------------------------------------------------------
     def refresh_feed(self, use_demo: bool = False) -> dict:
-        """Fetch per-minute feed, dedupe, aggregate to hourly. Returns meta + the
-        hourly frame. Falls back to a deterministic demo feed with the known
-        67/68/69 duplicate bug if the network is unavailable."""
-        try:
-            if use_demo:
-                raise OSError("demo mode")
+        if use_demo:
+            hourly, dups = simulate_feed_with_known_dups()
+        else:
             hourly, dups = fetch_past_hour_feed()
-            status = "live"
-        except Exception as e:
-            minute, dups = simulate_feed_with_known_dups()
-            hourly = minute.groupby([minute["datetime"].dt.floor("h"), "location_id"])["count"] \
-                           .sum().rename("count").reset_index().rename(columns={"datetime": "hour"})
-            status = f"demo (network unavailable: {str(e)[:60]})"
+
+        if hourly.empty:
+            self.feed_meta = dict(status="offline", last_update=str(pd.Timestamp.now()), dups_removed=0)
+            return self.feed_meta
+
         self.feed = hourly
         self.feed_meta = dict(
-            status=status,
-            last_update=str(pd.Timestamp.now().strftime("%Y-%m-%d %H:%M")),
-            dups_removed=int(dups),
-            sensors=len(hourly),
-            rows=len(hourly),
+            status="ok",
+            last_update=str(pd.Timestamp.now()),
+            dups_removed=dups,
+            records=len(hourly),
+            latest_datetime=str(hourly["hour"].max()),
         )
         return self.feed_meta
 
@@ -151,8 +152,10 @@ class Service:
         row = make_features_row(self.counts, self.codes, location_id, at, feed_hourly)
 
         def band(fw, h, mode):
-            q10 = float(np.clip(predict(self.boosters[(fw, h, 0.1)], fw, row), 0, None)[0])
-            q90 = float(np.clip(predict(self.boosters[(fw, h, 0.9)], fw, row), 0, None)[0])
+            b10 = self.get_booster(fw, h, 0.1)
+            b90 = self.get_booster(fw, h, 0.9)
+            q10 = float(np.clip(predict(b10, fw, row), 0, None)[0])
+            q90 = float(np.clip(predict(b90, fw, row), 0, None)[0])
             if mode == "raw":
                 return dict(lo=round(q10, 1), hi=round(q90, 1))
             adj = float(self.calibration.get(f"{fw}_{h}", 0.0))
@@ -162,11 +165,13 @@ class Service:
         for h in cfg.HORIZONS:
             out[str(h)] = {}
             for fw in frameworks:
+                b_pt = self.get_booster(fw, h, "point")
+                b_q50 = self.get_booster(fw, h, 0.5)
                 out[str(h)][fw] = dict(
                     point=round(float(np.clip(
-                        predict(self.boosters[(fw, h, "point")], fw, row), 0, None)[0]), 1),
+                        predict(b_pt, fw, row), 0, None)[0]), 1),
                     q50=round(float(np.clip(
-                        predict(self.boosters[(fw, h, 0.5)], fw, row), 0, None)[0]), 1),
+                        predict(b_q50, fw, row), 0, None)[0]), 1),
                     band_raw=band(fw, h, "raw"),
                     band_cal=band(fw, h, "cal"),
                 )
