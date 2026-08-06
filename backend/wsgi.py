@@ -5,10 +5,17 @@ import os
 import sys
 from pathlib import Path
 
-# Ensure project root is on Python path
+# Ensure backend directory is prioritized on Python path
 BASE_DIR = Path(__file__).resolve().parent
-if str(BASE_DIR) not in sys.path:
-    sys.path.insert(0, str(BASE_DIR))
+if str(BASE_DIR) in sys.path:
+    sys.path.remove(str(BASE_DIR))
+sys.path.insert(0, str(BASE_DIR))
+
+# Filter out Render's parent project directory if it collides with 'src' package
+for p in list(sys.path[1:]):
+    if p.endswith("/src") or p.endswith("\\src"):
+        if not (p.endswith("backend/src") or p.endswith("backend\\src")):
+            sys.path.remove(p)
 
 from app import create_app
 
