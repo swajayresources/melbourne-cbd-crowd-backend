@@ -126,20 +126,11 @@ class Service:
             last_update=str(pd.Timestamp.now()),
             dups_removed=dups,
             records=len(hourly),
-            latest_datetime=str(hourly["hour"].max()),
+            latest_datetime=str(hourly["hour"].max() if "hour" in hourly.columns else hourly["datetime"].max()),
         )
         return self.feed_meta
 
     # -- forecasting ---------------------------------------------------------
-    def forecast(self, location_id: int, at: pd.Timestamp | None = None,
-                 frameworks: tuple = ("lgb", "xgb")) -> dict:
-        """Point + q10/q50/q90 + raw & calibrated 80% bands for all horizons."""
-        if location_id not in set(self.counts["location_id"]):
-            raise KeyError(f"unknown sensor {location_id}")
-        at = pd.Timestamp(at) if at is not None else pd.Timestamp.now().floor("h")
-        feed_hourly = self.feed if self.feed is not None else None
-        row = make_features_row(self.counts, self.codes, location_id, at, feed_hourly)
-
     def predict_row(self, fw: str, h: int, key: Any, row: pd.DataFrame) -> float:
         if self.onnx_engine and self.onnx_engine.is_available():
             model_name = f"{fw}_cpu_point_None_{h}" if key == "point" else f"{fw}_cpu_{key}_{key}_{h}"
@@ -149,7 +140,6 @@ class Service:
         booster = self.get_booster(fw, h, key)
         return float(np.clip(predict(booster, fw, row), 0, None)[0])
 
-    # -- forecasting ---------------------------------------------------------
     def forecast(self, location_id: int, at: pd.Timestamp | None = None,
                  frameworks: tuple = ("lgb", "xgb")) -> dict:
         """Point + q10/q50/q90 + raw & calibrated 80% bands for all horizons."""
@@ -203,10 +193,12 @@ def make_features_row(counts: pd.DataFrame, codes: pd.Series, location_id: int,
     s = counts[counts["location_id"] == location_id].sort_values("datetime")
     hour = pd.Timestamp(at).floor("h")
 
+    feed_col = "datetime" if feed_hourly is not None and "datetime" in feed_hourly.columns else "hour"
+
     def value_at(t: pd.Timestamp) -> float:
         if feed_hourly is not None:
             hit = feed_hourly[(feed_hourly["location_id"] == location_id) &
-                              (feed_hourly["hour"] == t)]["count"]
+                              (feed_hourly[feed_col] == t)]["count"]
             if len(hit):
                 return float(hit.iloc[0])
         hit = s[s["datetime"] == t]["count"]
@@ -215,7 +207,7 @@ def make_features_row(counts: pd.DataFrame, codes: pd.Series, location_id: int,
     now_val = value_at(hour)
     feed_has_hour = (feed_hourly is not None and
                      len(feed_hourly[(feed_hourly["location_id"] == location_id) &
-                                     (feed_hourly["hour"] == hour)]) > 0)
+                                     (feed_hourly[feed_col] == hour)]) > 0)
 
     def roll_mean(win: int) -> float:
         lo = hour - pd.Timedelta(hours=win - 1)
