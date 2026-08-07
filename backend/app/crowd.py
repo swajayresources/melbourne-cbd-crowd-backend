@@ -409,10 +409,12 @@ def evaluate_route_crowds(
     sensors = crowd_engine.locations_df.dropna(subset=["latitude", "longitude"])
     annotated_routes = []
 
+    # Batch: collect every nearby sensor across all routes, then make ONE
+    # Modal call (modal_ml_batch) instead of one HTTP round-trip per sensor.
+    nearby_map: Dict[int, Dict[str, Any]] = {}
+
     for r in routes:
         coords = r["coordinates"]
-        nearby_sensors: Dict[int, Dict[str, Any]] = {}
-        
         step = max(1, len(coords) // 20)
         sampled = coords[::step] if coords else []
 
@@ -422,24 +424,27 @@ def evaluate_route_crowds(
                 slat, slon = float(row["latitude"]), float(row["longitude"])
                 d_m = haversine_distance_m(lat, lon, slat, slon)
                 if d_m <= 200.0:
-                    if loc_id not in nearby_sensors or d_m < nearby_sensors[loc_id]["dist"]:
-                        nearby_sensors[loc_id] = {
+                    if loc_id not in nearby_map or d_m < nearby_map[loc_id]["dist"]:
+                        nearby_map[loc_id] = {
                             "dist": d_m,
                             "name": str(row.get("sensor_name", f"Sensor {loc_id}")),
                             "desc": str(row.get("sensor_description", "")),
                         }
 
+    if mode == "ml" and service is not None:
+        forecasts = service.forecast_ml_modal_batch(list(nearby_map.keys()), dt) or {}
+    else:
+        forecasts = {}
+
+    for r in routes:
         remarks = []
         crowd_levels = []
         sensor_details = []
 
-        for loc_id, info in nearby_sensors.items():
-            if mode == "ml" and service is not None:
-                f = service.forecast_ml_modal(loc_id, dt)
-                if f and f.get("1", {}).get("lgb"):
-                    pred_count = f["1"]["lgb"]["point"]
-                else:
-                    pred_count = crowd_engine.predict_rule_count(loc_id, dt)
+        for loc_id, info in nearby_map.items():
+            fc = forecasts.get(loc_id) if forecasts else None
+            if fc and fc.get("1", {}).get("lgb"):
+                pred_count = fc["1"]["lgb"]["point"]
             else:
                 pred_count = crowd_engine.predict_rule_count(loc_id, dt)
 

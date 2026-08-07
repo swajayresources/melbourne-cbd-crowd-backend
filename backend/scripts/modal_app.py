@@ -163,3 +163,64 @@ def predict_onnx(body: dict):
             "band_cal": {"lo": round(max(q10 - adj, 0), 1), "hi": round(q90 + adj, 1)},
         }
     return {"forecast": out, "mode": "modal_onnx", "provider": "modal_onnx"}
+
+
+@app.function(image=image, min_containers=1, timeout=90)
+@modal.fastapi_endpoint(method="POST")
+def predict_onnx_batch(body: dict):
+    """Batched real ONNX inference: one HTTP round-trip for many sensors.
+
+    body = {
+        "sensors": {
+            "<location_id>": [12 features],
+            ...
+        },
+        "calibration": {"1": .., "6": .., "24": ..},
+    }
+    Returns {"forecasts": {"<location_id>": {"1": {...}, "6": {...}, "24": {...}}}}
+    """
+    import numpy as np
+    import onnxruntime as ort
+
+    sensors = body.get("sensors") or {}
+    if not sensors:
+        return {"forecasts": {}}
+    calibration = dict(CALIBRATION)
+    calibration.update(body.get("calibration") or {})
+
+    session_cache: Dict[tuple, Any] = {}
+
+    def get_session(key: Any, h: int):
+        cache_key = (h, key)
+        if cache_key not in session_cache:
+            sess = ort.InferenceSession(str(_model_path(h, key)), providers=["CPUExecutionProvider"])
+            session_cache[cache_key] = sess
+        return session_cache[cache_key]
+
+    def run_single(features: List[float], key: Any, h: int) -> float:
+        x = np.asarray(features, dtype=np.float32).reshape(1, -1)
+        sess = get_session(key, h)
+        input_name = sess.get_inputs()[0].name
+        output_name = sess.get_outputs()[0].name
+        preds = sess.run([output_name], {input_name: x})[0]
+        return float(np.clip(np.asarray(preds).flatten()[0], 0, None))
+
+    forecasts: Dict[str, Any] = {}
+    for loc_str, features in sensors.items():
+        if len(features) != 12:
+            continue
+        out: Dict[str, Any] = {}
+        for h in HORIZONS:
+            pt = run_single(features, "point", h)
+            q10 = run_single(features, 0.1, h)
+            q50 = run_single(features, 0.5, h)
+            q90 = run_single(features, 0.9, h)
+            adj = float(calibration.get(str(h), 0.0))
+            out[str(h)] = {
+                "point": round(pt, 1),
+                "q50": round(q50, 1),
+                "band_raw": {"lo": round(q10, 1), "hi": round(q90, 1)},
+                "band_cal": {"lo": round(max(q10 - adj, 0), 1), "hi": round(q90 + adj, 1)},
+            }
+        forecasts[loc_str] = out
+    return {"forecasts": forecasts, "mode": "modal_onnx_batch", "provider": "modal_onnx"}
