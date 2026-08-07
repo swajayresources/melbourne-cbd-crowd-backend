@@ -49,8 +49,21 @@ def make_synthetic_counts() -> pd.DataFrame:
     }
     event_days = rng.choice(hourly.normalize().unique(), size=10, replace=False)
 
+    # Load sensor metadata to cover ALL 134 sensors
+    from .load import load_sensor_locations
+    loc_df = load_sensor_locations()
+    if not loc_df.empty:
+        all_profiles = []
+        for loc_id, row in loc_df.iterrows():
+            loc_id = int(row.get("location_id", loc_id))
+            name = str(row.get("sensor_name", f"Sensor {loc_id}"))
+            base = 400.0 if loc_id in (1, 2, 3) else 250.0
+            all_profiles.append((loc_id, name, (2.5, 2.8), 0.75, base))
+    else:
+        all_profiles = SENSOR_PROFILES
+
     frames = []
-    for loc_id, name, (ampm, pmpm), wend_mult, base in SENSOR_PROFILES:
+    for loc_id, name, (ampm, pmpm), wend_mult, base in all_profiles:
         if loc_id in SHORT_SENSOR_IDS:
             t = hourly[hourly >= short_starts[loc_id]]
         else:
