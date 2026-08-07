@@ -8,7 +8,10 @@ import urllib.request
 from pathlib import Path
 import pandas as pd
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+try:
+    BASE_DIR = Path(__file__).resolve().parent.parent
+except NameError:
+    BASE_DIR = Path("backend").resolve()
 sys.path.insert(0, str(BASE_DIR))
 
 from app.config import BaseConfig
@@ -42,7 +45,7 @@ def seed_sensor_locations():
         })
 
     print(f"Seeding {len(records)} sensor records into Supabase...")
-    url = f"{SUPABASE_URL}/rest/v1/sensor_locations"
+    url = f"{SUPABASE_URL}/rest/v1/sensor_locations?on_conflict=location_id"
     req = urllib.request.Request(
         url,
         data=json.dumps(records).encode("utf-8"),
