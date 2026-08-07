@@ -411,9 +411,11 @@ def evaluate_route_crowds(
 
     # Batch: collect every nearby sensor across all routes, then make ONE
     # Modal call (modal_ml_batch) instead of one HTTP round-trip per sensor.
+    # Each route keeps its own nearby set (200m) for per-route annotation.
     nearby_map: Dict[int, Dict[str, Any]] = {}
+    route_sensor_ids: List[List[int]] = [[] for _ in routes]
 
-    for r in routes:
+    for ri, r in enumerate(routes):
         coords = r["coordinates"]
         step = max(1, len(coords) // 20)
         sampled = coords[::step] if coords else []
@@ -430,18 +432,21 @@ def evaluate_route_crowds(
                             "name": str(row.get("sensor_name", f"Sensor {loc_id}")),
                             "desc": str(row.get("sensor_description", "")),
                         }
+                    if loc_id not in route_sensor_ids[ri]:
+                        route_sensor_ids[ri].append(loc_id)
 
     if mode == "ml" and service is not None:
         forecasts = service.forecast_ml_modal_batch(list(nearby_map.keys()), dt) or {}
     else:
         forecasts = {}
 
-    for r in routes:
+    for ri, r in enumerate(routes):
         remarks = []
         crowd_levels = []
         sensor_details = []
 
-        for loc_id, info in nearby_map.items():
+        for loc_id in route_sensor_ids[ri]:
+            info = nearby_map[loc_id]
             fc = forecasts.get(loc_id) if forecasts else None
             if fc and fc.get("1", {}).get("lgb"):
                 pred_count = fc["1"]["lgb"]["point"]
