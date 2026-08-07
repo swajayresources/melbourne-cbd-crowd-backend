@@ -98,7 +98,16 @@ def api_predict():
 
     meta = next((s for s in svc.sensor_list() if s["location_id"] == loc_id), None)
     if not meta:
-        return jsonify(dict(error=f"location {loc_id} not found")), 404
+        if loc_id in crowd.locations_df.index:
+            row = crowd.locations_df.loc[loc_id]
+            meta = {
+                "location_id": loc_id,
+                "name": str(row.get("sensor_name", f"Sensor {loc_id}")),
+                "description": str(row.get("sensor_description", "")),
+                "group": "long",
+            }
+        else:
+            meta = {"location_id": loc_id, "name": f"Location {loc_id}", "description": "", "group": "long"}
 
     if not display_name:
         display_name = meta.get("description") or meta.get("name") or f"Location {loc_id}"
@@ -117,7 +126,7 @@ def api_predict():
         try:
             req_url = f"{modal_url.rstrip('/')}?location_id={loc_id}&hour={dt.hour}&dow={dt.dayofweek}"
             req = urllib.request.Request(req_url, headers={"User-Agent": "MelbournePedestrianCrowdMap/1.0"})
-            with urllib.request.urlopen(req, timeout=3.0) as resp:
+            with urllib.request.urlopen(req, timeout=8.0) as resp:
                 modal_data = json.loads(resp.read().decode("utf-8"))
                 modal_data["sensor"] = meta
                 modal_data["display_name"] = display_name
