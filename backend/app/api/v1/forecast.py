@@ -1,6 +1,9 @@
 """Forecast API V1 routes."""
 from __future__ import annotations
 
+import os
+import json
+import urllib.request
 import pandas as pd
 from flask import Blueprint, jsonify, request, current_app
 
@@ -107,6 +110,23 @@ def api_predict():
 
     th = crowd.get_thresholds(loc_id)
     p75_val = th["p75"]
+
+    # Optional Modal Serverless Offloading if MODAL_API_URL is configured
+    modal_url = os.getenv("MODAL_API_URL", "")
+    if modal_url:
+        try:
+            req_url = f"{modal_url.rstrip('/')}?location_id={loc_id}&hour={dt.hour}&dow={dt.dayofweek}"
+            req = urllib.request.Request(req_url, headers={"User-Agent": "MelbournePedestrianCrowdMap/1.0"})
+            with urllib.request.urlopen(req, timeout=3.0) as resp:
+                modal_data = json.loads(resp.read().decode("utf-8"))
+                modal_data["sensor"] = meta
+                modal_data["display_name"] = display_name
+                modal_data["latitude"] = resolved_lat
+                modal_data["longitude"] = resolved_lon
+                modal_data["datetime"] = str(dt)
+                return jsonify(modal_data)
+        except Exception:
+            pass
 
     try:
         f = svc.get_forecast(loc_id, at=dt, frameworks=("lgb",))
