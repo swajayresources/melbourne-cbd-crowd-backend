@@ -176,6 +176,51 @@ class Service:
                 )
         return out
 
+    def forecast_ml_modal(self, location_id: int, at: pd.Timestamp) -> dict | None:
+        """Modal ONNX forecast for one sensor (no local model loading).
+
+        Returns the same shape as forecast() ({"1": {"lgb": {...}}, ...})
+        or None when Modal is unreachable so callers can fall back to cheap
+        rule-based estimates without loading ONNX models into Render's 512MB.
+        """
+        import json
+        import os
+        import urllib.request
+
+        modal_ml_url = os.getenv("MODAL_ML_API_URL", "")
+        if not modal_ml_url:
+            try:
+                from flask import current_app
+                modal_ml_url = current_app.config.get("MODAL_ML_API_URL", "")
+            except Exception:
+                modal_ml_url = ""
+        if not modal_ml_url:
+            return None
+        try:
+            row = make_features_row(self.counts, self.codes, location_id, at, self.feed)
+            payload = json.dumps({
+                "features": [float(v) for v in row.iloc[0].tolist()],
+                "calibration": {str(h): float(self.calibration.get(f"lgb_{h}", 0.0))
+                                for h in (1, 6, 24)},
+            }).encode("utf-8")
+            req = urllib.request.Request(
+                f"{modal_ml_url.rstrip('/')}",
+                data=payload,
+                headers={"Content-Type": "application/json", "User-Agent": "MelbournePedestrianCrowdMap/1.0"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=8.0) as resp:
+                fc = json.loads(resp.read().decode("utf-8")).get("forecast", {})
+            if not fc:
+                return None
+            return {
+                h: {"lgb": dict(point=v["point"], q50=v["q50"],
+                                band_raw=v["band_raw"], band_cal=v["band_cal"])}
+                for h, v in fc.items()
+            }
+        except Exception:
+            return None
+
     def history(self, location_id: int, hours: int = 168) -> list[dict]:
         s = self.counts[self.counts["location_id"] == location_id].sort_values("datetime")
         out = [dict(t=str(t), v=float(v)) for t, v in s[["datetime", "count"]].itertuples(index=False)]

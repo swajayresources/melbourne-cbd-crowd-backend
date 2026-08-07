@@ -435,10 +435,10 @@ def evaluate_route_crowds(
 
         for loc_id, info in nearby_sensors.items():
             if mode == "ml" and service is not None:
-                try:
-                    f = service.forecast(loc_id, at=dt, frameworks=("lgb",))
+                f = service.forecast_ml_modal(loc_id, dt)
+                if f and f.get("1", {}).get("lgb"):
                     pred_count = f["1"]["lgb"]["point"]
-                except Exception:
+                else:
                     pred_count = crowd_engine.predict_rule_count(loc_id, dt)
             else:
                 pred_count = crowd_engine.predict_rule_count(loc_id, dt)

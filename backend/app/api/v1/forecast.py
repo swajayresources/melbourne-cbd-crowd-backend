@@ -26,34 +26,7 @@ def modal_onnx_forecast(svc, location_id: int, at: pd.Timestamp):
     ({"1": {"lgb": {point, q50, band_raw, band_cal}}, ...}) or None if the
     Modal call fails so callers can fall back to local inference/rules.
     """
-    modal_ml_url = current_app.config.get("MODAL_ML_API_URL") or os.getenv("MODAL_ML_API_URL", "")
-    if not modal_ml_url:
-        return None
-    try:
-        row = make_features_row(svc.service.counts, svc.service.codes, location_id, at, svc.service.feed)
-        payload = json.dumps({
-            "features": [float(v) for v in row.iloc[0].tolist()],
-            "calibration": {str(h): float(svc.service.calibration.get(f"lgb_{h}", 0.0))
-                            for h in (1, 6, 24)},
-        }).encode("utf-8")
-        req = urllib.request.Request(
-            f"{modal_ml_url.rstrip('/')}",
-            data=payload,
-            headers={"Content-Type": "application/json", "User-Agent": "MelbournePedestrianCrowdMap/1.0"},
-            method="POST",
-        )
-        with urllib.request.urlopen(req, timeout=10.0) as resp:
-            modal_data = json.loads(resp.read().decode("utf-8"))
-        fc = modal_data.get("forecast", {})
-        if not fc:
-            return None
-        return {
-            h: {"lgb": dict(point=v["point"], q50=v["q50"],
-                            band_raw=v["band_raw"], band_cal=v["band_cal"])}
-            for h, v in fc.items()
-        }
-    except Exception:
-        return None
+    return svc.service.forecast_ml_modal(location_id, at)
 
 
 @forecast_bp.get("/forecast")
