@@ -29,7 +29,7 @@ def load_real_counts() -> pd.DataFrame:
     if not cfg.RAW_HOURLY_CSV.exists():
         print(f"Dataset {cfg.RAW_HOURLY_CSV.name} not present — falling back to synthetic counts...")
         from .synthetic import make_synthetic_counts
-        return make_synthetic_counts()
+        return make_synthetic_counts(all_sensors=True)
 
     df = pd.read_csv(
         cfg.RAW_HOURLY_CSV,

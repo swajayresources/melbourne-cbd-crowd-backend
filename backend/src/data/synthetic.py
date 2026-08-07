@@ -40,7 +40,11 @@ def _holiday_mask(dates: pd.DatetimeIndex) -> pd.Series:
 def make_synthetic_counts(all_sensors: bool = False) -> pd.DataFrame:
     s = cfg.SYNTHETIC
     rng = np.random.default_rng(cfg.SEED)
-    start, end = pd.Timestamp(s["start"]), pd.Timestamp(s["end"])
+    if all_sensors:
+        start = pd.Timestamp.now() - pd.Timedelta(days=14)
+        end = pd.Timestamp.now()
+    else:
+        start, end = pd.Timestamp(s["start"]), pd.Timestamp(s["end"])
     hourly = pd.date_range(start, end, freq="h")
     short_starts = {loc: pd.Timestamp(t) for loc, t in zip(s["short_ids"], s["short_starts"])}
 
