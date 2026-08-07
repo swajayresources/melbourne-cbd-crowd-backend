@@ -7,6 +7,8 @@ import urllib.request
 import pandas as pd
 from flask import Blueprint, jsonify, request, current_app
 
+from app.forecast_service import make_features_row
+
 forecast_bp = Blueprint("forecast", __name__)
 
 
@@ -120,8 +122,57 @@ def api_predict():
     th = crowd.get_thresholds(loc_id)
     p75_val = th["p75"]
 
+    # Real ONNX inference via Modal (offloads heavy ML from Render free tier).
+    modal_ml_url = current_app.config.get("MODAL_ML_API_URL") or os.getenv("MODAL_ML_API_URL", "")
+    if modal_ml_url:
+        try:
+            row = make_features_row(svc.service.counts, svc.service.codes, loc_id, dt, svc.service.feed)
+            payload = json.dumps({
+                "features": [float(v) for v in row.iloc[0].tolist()],
+                "calibration": {str(h): float(svc.service.calibration.get(f"lgb_{h}", 0.0))
+                                for h in (1, 6, 24)},
+            }).encode("utf-8")
+            req = urllib.request.Request(
+                f"{modal_ml_url.rstrip('/')}",
+                data=payload,
+                headers={"Content-Type": "application/json", "User-Agent": "MelbournePedestrianCrowdMap/1.0"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=10.0) as resp:
+                modal_data = json.loads(resp.read().decode("utf-8"))
+            fc = modal_data.get("forecast", {})
+            h1 = fc.get("1", {})
+            if h1:
+                point_pred = float(h1["point"])
+                band_cal = h1["band_cal"]
+                q10 = band_cal["lo"]
+                q50 = h1["q50"]
+                q90 = band_cal["hi"]
+                prob_exceed = svc.calculate_exceedance_prob(q10, q50, q90, p75_val)
+                level_code, sensory_label, advice = crowd.classify_sensory_level(loc_id, point_pred)
+                return jsonify(dict(
+                    sensor=meta,
+                    display_name=display_name,
+                    latitude=resolved_lat,
+                    longitude=resolved_lon,
+                    datetime=str(dt),
+                    point=point_pred,
+                    q50=q50,
+                    band_cal=band_cal,
+                    band_raw=h1.get("band_raw", band_cal),
+                    thresholds=th,
+                    level=level_code,
+                    sensory_label=sensory_label,
+                    sensory_advice=advice,
+                    p75_exceed_prob_pct=prob_exceed,
+                    mode="modal_onnx",
+                    forecast=fc,
+                ))
+        except Exception:
+            pass
+
     # Optional Modal Serverless Offloading if MODAL_API_URL is configured
-    modal_url = os.getenv("MODAL_API_URL", "")
+    modal_url = current_app.config.get("MODAL_API_URL") or os.getenv("MODAL_API_URL", "")
     if modal_url:
         try:
             req_url = f"{modal_url.rstrip('/')}?location_id={loc_id}&hour={dt.hour}&dow={dt.dayofweek}"
@@ -133,6 +184,10 @@ def api_predict():
                 modal_data["latitude"] = resolved_lat
                 modal_data["longitude"] = resolved_lon
                 modal_data["datetime"] = str(dt)
+                if "mode" not in modal_data:
+                    modal_data["mode"] = modal_data.get("provider", "modal_serverless")
+                if "p75_exceed_prob_pct" not in modal_data:
+                    modal_data["p75_exceed_prob_pct"] = 50.0 if modal_data.get("point", 0) >= p75_val else 20.0
                 return jsonify(modal_data)
         except Exception:
             pass

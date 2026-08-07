@@ -180,6 +180,10 @@ def location_code_map(counts: pd.DataFrame) -> pd.Series:
     without leaking their identity at train time.
     """
     train_locs = counts[counts["datetime"] < pd.Timestamp(cfg.VAL_START)]["location_id"].unique()
+    if len(train_locs) == 0:
+        # Short-history windows (e.g. last-14-day synthetic feed) may contain no
+        # rows before VAL_START; fall back to encoding every known location.
+        train_locs = counts["location_id"].unique()
     codes, _ = pd.factorize(train_locs)
     code_map = dict(zip(train_locs, codes))
     modal = int(pd.Series(codes).mode()[0])

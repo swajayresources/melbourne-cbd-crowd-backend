@@ -24,6 +24,8 @@ class BaseConfig:
     SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
     UPSTASH_REDIS_URL = os.getenv("UPSTASH_REDIS_URL", os.getenv("UPSTASH_REDIS_REST_URL", ""))
     UPSTASH_REDIS_TOKEN = os.getenv("UPSTASH_REDIS_TOKEN", os.getenv("UPSTASH_REDIS_REST_TOKEN", ""))
+    MODAL_API_URL = os.getenv("MODAL_API_URL", "")
+    MODAL_ML_API_URL = os.getenv("MODAL_ML_API_URL", "")
     
     # Cache Settings
     CACHE_TTL_SECONDS = int(os.getenv("CACHE_TTL_SECONDS", "60"))
