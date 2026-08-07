@@ -22,7 +22,7 @@ def api_forecast():
     except ValueError:
         return jsonify(dict(error="location_id must be an integer")), 400
     try:
-        f = svc.get_forecast(loc, frameworks=("lgb", "xgb"))
+        f = svc.get_forecast(loc, frameworks=("lgb",))
     except KeyError as e:
         return jsonify(dict(error=str(e))), 404
     meta = next((s for s in svc.sensor_list() if s["location_id"] == loc), None)

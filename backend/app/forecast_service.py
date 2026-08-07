@@ -146,7 +146,7 @@ class Service:
         return float(np.clip(predict(booster, fw, row), 0, None)[0])
 
     def forecast(self, location_id: int, at: pd.Timestamp | None = None,
-                 frameworks: tuple = ("lgb", "xgb")) -> dict:
+                 frameworks: tuple = ("lgb",)) -> dict:
         """Point + q10/q50/q90 + raw & calibrated 80% bands for all horizons."""
         if location_id not in set(self.counts["location_id"]):
             raise KeyError(f"unknown sensor {location_id}")
