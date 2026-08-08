@@ -1,8 +1,13 @@
 """Forecast API V1 routes."""
 from __future__ import annotations
 
+import os
+import json
+import urllib.request
 import pandas as pd
 from flask import Blueprint, jsonify, request, current_app
+
+from app.forecast_service import make_features_row
 
 forecast_bp = Blueprint("forecast", __name__)
 
@@ -14,6 +19,16 @@ def get_services():
     )
 
 
+def modal_onnx_forecast(svc, location_id: int, at: pd.Timestamp):
+    """POST the real feature row to Modal's ONNX endpoint.
+
+    Returns the forecast dict in the same shape as Service.forecast()
+    ({"1": {"lgb": {point, q50, band_raw, band_cal}}, ...}) or None if the
+    Modal call fails so callers can fall back to local inference/rules.
+    """
+    return svc.service.forecast_ml_modal(location_id, at)
+
+
 @forecast_bp.get("/forecast")
 def api_forecast():
     svc, _ = get_services()
@@ -22,7 +37,8 @@ def api_forecast():
     except ValueError:
         return jsonify(dict(error="location_id must be an integer")), 400
     try:
-        f = svc.get_forecast(loc, frameworks=("lgb", "xgb"))
+        dt = pd.Timestamp.now().floor("h")
+        f = modal_onnx_forecast(svc, loc, dt) or svc.get_forecast(loc, at=dt, frameworks=("lgb",))
     except KeyError as e:
         return jsonify(dict(error=str(e))), 404
     meta = next((s for s in svc.sensor_list() if s["location_id"] == loc), None)
@@ -95,7 +111,16 @@ def api_predict():
 
     meta = next((s for s in svc.sensor_list() if s["location_id"] == loc_id), None)
     if not meta:
-        return jsonify(dict(error=f"location {loc_id} not found")), 404
+        if loc_id in crowd.locations_df.index:
+            row = crowd.locations_df.loc[loc_id]
+            meta = {
+                "location_id": loc_id,
+                "name": str(row.get("sensor_name", f"Sensor {loc_id}")),
+                "description": str(row.get("sensor_description", "")),
+                "group": "long",
+            }
+        else:
+            meta = {"location_id": loc_id, "name": f"Location {loc_id}", "description": "", "group": "long"}
 
     if not display_name:
         display_name = meta.get("description") or meta.get("name") or f"Location {loc_id}"
@@ -107,6 +132,57 @@ def api_predict():
 
     th = crowd.get_thresholds(loc_id)
     p75_val = th["p75"]
+
+    # Real ONNX inference via Modal (offloads heavy ML from Render free tier).
+    fc = modal_onnx_forecast(svc, loc_id, dt)
+    if fc:
+        h1 = fc["1"]["lgb"]
+        point_pred = h1["point"]
+        band_cal = h1["band_cal"]
+        q10 = band_cal["lo"]
+        q50 = h1["q50"]
+        q90 = band_cal["hi"]
+        prob_exceed = svc.calculate_exceedance_prob(q10, q50, q90, p75_val)
+        level_code, sensory_label, advice = crowd.classify_sensory_level(loc_id, point_pred)
+        return jsonify(dict(
+            sensor=meta,
+            display_name=display_name,
+            latitude=resolved_lat,
+            longitude=resolved_lon,
+            datetime=str(dt),
+            point=point_pred,
+            q50=q50,
+            band_cal=band_cal,
+            band_raw=h1["band_raw"],
+            thresholds=th,
+            level=level_code,
+            sensory_label=sensory_label,
+            sensory_advice=advice,
+            p75_exceed_prob_pct=prob_exceed,
+            mode="modal_onnx",
+            forecast=fc,
+        ))
+
+    # Optional Modal Serverless Offloading if MODAL_API_URL is configured
+    modal_url = current_app.config.get("MODAL_API_URL") or os.getenv("MODAL_API_URL", "")
+    if modal_url:
+        try:
+            req_url = f"{modal_url.rstrip('/')}?location_id={loc_id}&hour={dt.hour}&dow={dt.dayofweek}"
+            req = urllib.request.Request(req_url, headers={"User-Agent": "MelbournePedestrianCrowdMap/1.0"})
+            with urllib.request.urlopen(req, timeout=8.0) as resp:
+                modal_data = json.loads(resp.read().decode("utf-8"))
+                modal_data["sensor"] = meta
+                modal_data["display_name"] = display_name
+                modal_data["latitude"] = resolved_lat
+                modal_data["longitude"] = resolved_lon
+                modal_data["datetime"] = str(dt)
+                if "mode" not in modal_data:
+                    modal_data["mode"] = modal_data.get("provider", "modal_serverless")
+                if "p75_exceed_prob_pct" not in modal_data:
+                    modal_data["p75_exceed_prob_pct"] = 50.0 if modal_data.get("point", 0) >= p75_val else 20.0
+                return jsonify(modal_data)
+        except Exception:
+            pass
 
     try:
         f = svc.get_forecast(loc_id, at=dt, frameworks=("lgb",))

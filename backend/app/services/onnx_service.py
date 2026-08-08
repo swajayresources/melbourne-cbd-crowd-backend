@@ -6,9 +6,12 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 
 
+import src.config as cfg
+
+
 class ONNXInferenceEngine:
     def __init__(self, models_dir: Optional[Path] = None):
-        self.models_dir = models_dir or (Path(__file__).resolve().parent.parent.parent / "results" / "onnx")
+        self.models_dir = models_dir or (cfg.RESULTS_DIR / "onnx")
         self._sessions: Dict[str, Any] = {}
         self.onnx_available = False
 

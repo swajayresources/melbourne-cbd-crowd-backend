@@ -180,11 +180,30 @@ def location_code_map(counts: pd.DataFrame) -> pd.Series:
     without leaking their identity at train time.
     """
     train_locs = counts[counts["datetime"] < pd.Timestamp(cfg.VAL_START)]["location_id"].unique()
+    if len(train_locs) == 0:
+        # Short-history windows (e.g. last-45-day Supabase feed) may contain no
+        # rows before VAL_START; fall back to the canonical training sensor set
+        # (committed snapshot) so production codes stay identical to training.
+        canonical = _load_training_sensor_ids()
+        if len(canonical):
+            train_locs = pd.array(canonical, dtype="int64")
+        else:
+            train_locs = counts["location_id"].unique()
     codes, _ = pd.factorize(train_locs)
     code_map = dict(zip(train_locs, codes))
     modal = int(pd.Series(codes).mode()[0])
     all_locs = counts["location_id"].unique()
     return pd.Series([code_map.get(loc, modal) for loc in all_locs], index=all_locs)
+
+
+def _load_training_sensor_ids() -> list:
+    """Canonical sorted location ids used to train the shipped models."""
+    try:
+        path = cfg.ROOT / "data" / "training_sensor_ids.json"
+        data = json.loads(path.read_text())
+        return [int(x) for x in data.get("training_sensor_ids", [])]
+    except Exception:
+        return []
 
 
 def run_experiment(counts: pd.DataFrame, sensor_groups: dict, device: str,

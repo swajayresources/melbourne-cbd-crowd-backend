@@ -37,10 +37,14 @@ def _holiday_mask(dates: pd.DatetimeIndex) -> pd.Series:
     return pd.Series(pd.DatetimeIndex(dates).isin(vic), index=dates)
 
 
-def make_synthetic_counts() -> pd.DataFrame:
+def make_synthetic_counts(all_sensors: bool = False) -> pd.DataFrame:
     s = cfg.SYNTHETIC
     rng = np.random.default_rng(cfg.SEED)
-    start, end = pd.Timestamp(s["start"]), pd.Timestamp(s["end"])
+    if all_sensors:
+        start = pd.Timestamp.now() - pd.Timedelta(days=14)
+        end = pd.Timestamp.now()
+    else:
+        start, end = pd.Timestamp(s["start"]), pd.Timestamp(s["end"])
     hourly = pd.date_range(start, end, freq="h")
     short_starts = {loc: pd.Timestamp(t) for loc, t in zip(s["short_ids"], s["short_starts"])}
 
@@ -49,8 +53,23 @@ def make_synthetic_counts() -> pd.DataFrame:
     }
     event_days = rng.choice(hourly.normalize().unique(), size=10, replace=False)
 
+    if all_sensors:
+        from .load import load_sensor_locations
+        loc_df = load_sensor_locations()
+        if not loc_df.empty:
+            all_profiles = []
+            for loc_id, row in loc_df.iterrows():
+                loc_id = int(row.get("location_id", loc_id))
+                name = str(row.get("sensor_name", f"Sensor {loc_id}"))
+                base = 400.0 if loc_id in (1, 2, 3) else 250.0
+                all_profiles.append((loc_id, name, (2.5, 2.8), 0.75, base))
+        else:
+            all_profiles = SENSOR_PROFILES
+    else:
+        all_profiles = SENSOR_PROFILES
+
     frames = []
-    for loc_id, name, (ampm, pmpm), wend_mult, base in SENSOR_PROFILES:
+    for loc_id, name, (ampm, pmpm), wend_mult, base in all_profiles:
         if loc_id in SHORT_SENSOR_IDS:
             t = hourly[hourly >= short_starts[loc_id]]
         else:

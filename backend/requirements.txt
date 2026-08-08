@@ -9,3 +9,5 @@ holidays>=0.40
 psutil>=5.9
 requests>=2.31
 python-dotenv>=1.0
+modal>=1.0.0
+

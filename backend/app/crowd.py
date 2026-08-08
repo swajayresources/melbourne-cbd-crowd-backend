@@ -34,44 +34,102 @@ class CrowdEngine:
         self.thresholds, self.expected_table = self._build_lookup_tables()
 
     def _load_locations(self) -> pd.DataFrame:
-        if not self.raw_loc_csv.exists():
-            return pd.DataFrame()
-        df = pd.read_csv(self.raw_loc_csv, sep=";")
-        df["location_id"] = df["location_id"].astype(int)
-        df["latitude"] = pd.to_numeric(df["latitude"], errors="coerce")
-        df["longitude"] = pd.to_numeric(df["longitude"], errors="coerce")
-        return df.set_index("location_id")
+        # 1. Embedded JSON snapshot (committed to Git - works on Render / serverless)
+        json_path = self.raw_loc_csv.parent.parent / "sensor_locations.json"
+        if json_path.exists():
+            try:
+                with open(json_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                if data:
+                    df = pd.DataFrame(data)
+                    df["location_id"] = df["location_id"].astype(int)
+                    df["latitude"] = pd.to_numeric(df["latitude"], errors="coerce")
+                    df["longitude"] = pd.to_numeric(df["longitude"], errors="coerce")
+                    return df.set_index("location_id")
+            except Exception:
+                pass
+
+        # 2. Local CSV fallback
+        if self.raw_loc_csv.exists():
+            df = pd.read_csv(self.raw_loc_csv, sep=";")
+            df["location_id"] = df["location_id"].astype(int)
+            df["latitude"] = pd.to_numeric(df["latitude"], errors="coerce")
+            df["longitude"] = pd.to_numeric(df["longitude"], errors="coerce")
+            return df.set_index("location_id")
+        
+        # 3. Supabase REST fallback if local files are missing
+        supabase_url = os.getenv("SUPABASE_URL", "")
+        supabase_key = os.getenv("SUPABASE_KEY", "")
+        if supabase_url and supabase_key:
+            try:
+                url = f"{supabase_url.rstrip('/')}/rest/v1/sensor_locations?select=*"
+                req = urllib.request.Request(
+                    url,
+                    headers={
+                        "apikey": supabase_key,
+                        "Authorization": f"Bearer {supabase_key}",
+                    }
+                )
+                with urllib.request.urlopen(req, timeout=5.0) as resp:
+                    data = json.loads(resp.read().decode("utf-8"))
+                    if data:
+                        df = pd.DataFrame(data)
+                        df["location_id"] = df["location_id"].astype(int)
+                        df["latitude"] = pd.to_numeric(df["latitude"], errors="coerce")
+                        df["longitude"] = pd.to_numeric(df["longitude"], errors="coerce")
+                        return df.set_index("location_id")
+            except Exception:
+                pass
+        return pd.DataFrame()
 
     def _build_lookup_tables(self) -> Tuple[Dict[int, Dict[str, float]], Dict[Tuple[int, int, int], float]]:
-        if not self.raw_hourly_csv.exists():
-            return {}, {}
-        
-        df = pd.read_csv(self.raw_hourly_csv, sep=";", parse_dates=["sensing_date"], low_memory=False)
-        df = df.rename(columns={"pedestriancount": "count"})
-        df["datetime"] = df["sensing_date"] + pd.to_timedelta(df["hourday"], unit="h")
-        df["location_id"] = df["location_id"].astype(int)
-        df["hour"] = df["datetime"].dt.hour
-        df["dow"] = df["datetime"].dt.dayofweek
-        
         thresholds: Dict[int, Dict[str, float]] = {}
         expected: Dict[Tuple[int, int, int], float] = {}
 
-        grouped = df.groupby("location_id")["count"]
-        for loc_id, series in grouped:
-            vals = series.dropna().to_numpy()
-            if len(vals) > 0:
-                p50 = float(np.percentile(vals, 50))
-                p75 = float(np.percentile(vals, 75))
-                thresholds[int(loc_id)] = {"p50": round(p50, 1), "p75": round(p75, 1)}
-            else:
-                thresholds[int(loc_id)] = {"p50": 100.0, "p75": 300.0}
+        # 1. Embedded JSON lookup stats snapshot (committed to Git)
+        json_path = self.raw_hourly_csv.parent.parent / "sensor_lookup_stats.json"
+        if json_path.exists():
+            try:
+                with open(json_path, "r", encoding="utf-8") as f:
+                    stats = json.load(f)
+                th_data = stats.get("thresholds", {})
+                for k, v in th_data.items():
+                    thresholds[int(k)] = {"p50": float(v["p50"]), "p75": float(v["p75"])}
+                
+                exp_data = stats.get("expected", {})
+                for k, v in exp_data.items():
+                    parts = k.split("_")
+                    if len(parts) == 3:
+                        expected[(int(parts[0]), int(parts[1]), int(parts[2]))] = float(v)
+                return thresholds, expected
+            except Exception:
+                pass
 
-        agg = df.groupby(["location_id", "hour", "dow"])["count"].mean().reset_index()
-        for _, row in agg.iterrows():
-            loc_id = int(row["location_id"])
-            hr = int(row["hour"])
-            dow = int(row["dow"])
-            expected[(loc_id, hr, dow)] = float(row["count"])
+        # 2. Raw hourly CSV calculation
+        if self.raw_hourly_csv.exists():
+            df = pd.read_csv(self.raw_hourly_csv, sep=";", parse_dates=["sensing_date"], low_memory=False)
+            df = df.rename(columns={"pedestriancount": "count"})
+            df["datetime"] = df["sensing_date"] + pd.to_timedelta(df["hourday"], unit="h")
+            df["location_id"] = df["location_id"].astype(int)
+            df["hour"] = df["datetime"].dt.hour
+            df["dow"] = df["datetime"].dt.dayofweek
+            
+            grouped = df.groupby("location_id")["count"]
+            for loc_id, series in grouped:
+                vals = series.dropna().to_numpy()
+                if len(vals) > 0:
+                    p50 = float(np.percentile(vals, 50))
+                    p75 = float(np.percentile(vals, 75))
+                    thresholds[int(loc_id)] = {"p50": round(p50, 1), "p75": round(p75, 1)}
+                else:
+                    thresholds[int(loc_id)] = {"p50": 100.0, "p75": 300.0}
+
+            agg = df.groupby(["location_id", "hour", "dow"])["count"].mean().reset_index()
+            for _, row in agg.iterrows():
+                loc_id = int(row["location_id"])
+                hr = int(row["hour"])
+                dow = int(row["dow"])
+                expected[(loc_id, hr, dow)] = float(row["count"])
 
         return thresholds, expected
 
@@ -351,10 +409,14 @@ def evaluate_route_crowds(
     sensors = crowd_engine.locations_df.dropna(subset=["latitude", "longitude"])
     annotated_routes = []
 
-    for r in routes:
+    # Batch: collect every nearby sensor across all routes, then make ONE
+    # Modal call (modal_ml_batch) instead of one HTTP round-trip per sensor.
+    # Each route keeps its own nearby set (200m) for per-route annotation.
+    nearby_map: Dict[int, Dict[str, Any]] = {}
+    route_sensor_ids: List[List[int]] = [[] for _ in routes]
+
+    for ri, r in enumerate(routes):
         coords = r["coordinates"]
-        nearby_sensors: Dict[int, Dict[str, Any]] = {}
-        
         step = max(1, len(coords) // 20)
         sampled = coords[::step] if coords else []
 
@@ -364,24 +426,30 @@ def evaluate_route_crowds(
                 slat, slon = float(row["latitude"]), float(row["longitude"])
                 d_m = haversine_distance_m(lat, lon, slat, slon)
                 if d_m <= 200.0:
-                    if loc_id not in nearby_sensors or d_m < nearby_sensors[loc_id]["dist"]:
-                        nearby_sensors[loc_id] = {
+                    if loc_id not in nearby_map or d_m < nearby_map[loc_id]["dist"]:
+                        nearby_map[loc_id] = {
                             "dist": d_m,
                             "name": str(row.get("sensor_name", f"Sensor {loc_id}")),
                             "desc": str(row.get("sensor_description", "")),
                         }
+                    if loc_id not in route_sensor_ids[ri]:
+                        route_sensor_ids[ri].append(loc_id)
 
+    if mode == "ml" and service is not None:
+        forecasts = service.forecast_ml_modal_batch(list(nearby_map.keys()), dt) or {}
+    else:
+        forecasts = {}
+
+    for ri, r in enumerate(routes):
         remarks = []
         crowd_levels = []
         sensor_details = []
 
-        for loc_id, info in nearby_sensors.items():
-            if mode == "ml" and service is not None:
-                try:
-                    f = service.forecast(loc_id, at=dt, frameworks=("lgb",))
-                    pred_count = f["1"]["lgb"]["point"]
-                except Exception:
-                    pred_count = crowd_engine.predict_rule_count(loc_id, dt)
+        for loc_id in route_sensor_ids[ri]:
+            info = nearby_map[loc_id]
+            fc = forecasts.get(loc_id) if forecasts else None
+            if fc and fc.get("1", {}).get("lgb"):
+                pred_count = fc["1"]["lgb"]["point"]
             else:
                 pred_count = crowd_engine.predict_rule_count(loc_id, dt)
 

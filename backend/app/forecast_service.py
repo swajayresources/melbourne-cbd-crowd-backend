@@ -146,7 +146,7 @@ class Service:
         return float(np.clip(predict(booster, fw, row), 0, None)[0])
 
     def forecast(self, location_id: int, at: pd.Timestamp | None = None,
-                 frameworks: tuple = ("lgb", "xgb")) -> dict:
+                 frameworks: tuple = ("lgb",)) -> dict:
         """Point + q10/q50/q90 + raw & calibrated 80% bands for all horizons."""
         if location_id not in set(self.counts["location_id"]):
             raise KeyError(f"unknown sensor {location_id}")
@@ -175,6 +175,117 @@ class Service:
                     band_cal=band(fw, h, "cal"),
                 )
         return out
+
+    def forecast_ml_modal(self, location_id: int, at: pd.Timestamp) -> dict | None:
+        """Modal ONNX forecast for one sensor (no local model loading).
+
+        Returns the same shape as forecast() ({"1": {"lgb": {...}}, ...})
+        or None when Modal is unreachable so callers can fall back to cheap
+        rule-based estimates without loading ONNX models into Render's 512MB.
+        """
+        import json
+        import os
+        import urllib.request
+
+        modal_ml_url = os.getenv("MODAL_ML_API_URL", "")
+        if not modal_ml_url:
+            try:
+                from flask import current_app
+                modal_ml_url = current_app.config.get("MODAL_ML_API_URL", "")
+            except Exception:
+                modal_ml_url = ""
+        if not modal_ml_url:
+            return None
+        try:
+            row = make_features_row(self.counts, self.codes, location_id, at, self.feed)
+            payload = json.dumps({
+                "features": [float(v) for v in row.iloc[0].tolist()],
+                "calibration": {str(h): float(self.calibration.get(f"lgb_{h}", 0.0))
+                                for h in (1, 6, 24)},
+            }).encode("utf-8")
+            req = urllib.request.Request(
+                f"{modal_ml_url.rstrip('/')}",
+                data=payload,
+                headers={"Content-Type": "application/json", "User-Agent": "MelbournePedestrianCrowdMap/1.0"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=8.0) as resp:
+                fc = json.loads(resp.read().decode("utf-8")).get("forecast", {})
+            if not fc:
+                return None
+            return {
+                h: {"lgb": dict(point=v["point"], q50=v["q50"],
+                                band_raw=v["band_raw"], band_cal=v["band_cal"])}
+                for h, v in fc.items()
+            }
+        except Exception:
+            return None
+
+    def forecast_ml_modal_batch(self, location_ids: list[int], at: pd.Timestamp) -> dict[int, dict] | None:
+        """Batched Modal ONNX forecasts for many sensors in one round-trip.
+
+        Returns {location_id: forecast} (same shape as forecast()) or None
+        when Modal is unreachable. Individual sensors that fail (no features,
+        unknown id) are simply omitted so callers can rule-fallback per sensor.
+        """
+        import json
+        import os
+        import urllib.request
+
+        modal_ml_url = os.getenv("MODAL_ML_API_URL", "")
+        if not modal_ml_url:
+            try:
+                from flask import current_app
+                modal_ml_url = current_app.config.get("MODAL_ML_API_URL", "")
+            except Exception:
+                modal_ml_url = ""
+        if not modal_ml_url or not location_ids:
+            return None
+
+        modal_batch_url = os.getenv("MODAL_ML_BATCH_API_URL", "")
+        if not modal_batch_url:
+            try:
+                from flask import current_app
+                modal_batch_url = current_app.config.get("MODAL_ML_BATCH_API_URL", "")
+            except Exception:
+                modal_batch_url = ""
+        batch_url = modal_batch_url or f"{modal_ml_url.rstrip('/')}/batch"
+
+        payload_sensors: dict[str, list[float]] = {}
+        for loc_id in location_ids:
+            try:
+                row = make_features_row(self.counts, self.codes, loc_id, at, self.feed)
+                payload_sensors[str(loc_id)] = [float(v) for v in row.iloc[0].tolist()]
+            except Exception:
+                continue
+        if not payload_sensors:
+            return None
+
+        try:
+            payload = json.dumps({
+                "sensors": payload_sensors,
+                "calibration": {str(h): float(self.calibration.get(f"lgb_{h}", 0.0))
+                                for h in (1, 6, 24)},
+            }).encode("utf-8")
+            req = urllib.request.Request(
+                f"{batch_url}",
+                data=payload,
+                headers={"Content-Type": "application/json", "User-Agent": "MelbournePedestrianCrowdMap/1.0"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=12.0) as resp:
+                forecasts = json.loads(resp.read().decode("utf-8")).get("forecasts", {})
+            out: dict[int, dict] = {}
+            for loc_str, fc in forecasts.items():
+                shaped = {
+                    h: {"lgb": dict(point=v["point"], q50=v["q50"],
+                                    band_raw=v["band_raw"], band_cal=v["band_cal"])}
+                    for h, v in fc.items()
+                }
+                out[int(loc_str)] = shaped
+            return out
+        except Exception:
+            return None
 
     def history(self, location_id: int, hours: int = 168) -> list[dict]:
         s = self.counts[self.counts["location_id"] == location_id].sort_values("datetime")
