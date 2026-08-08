@@ -6,10 +6,11 @@ endpoints by delegating to the modular V1 service architecture.
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
-from flask import render_template, jsonify, request
+from flask import render_template, jsonify, request, redirect
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -23,6 +24,9 @@ SERVICE = app.extensions["forecast_service"].service
 CROWD_ENGINE = app.extensions["crowd_service"].engine
 SERVER_MODE = app.config.get("DEFAULT_SERVER_MODE", "rule")
 
+# Frontend is served from Vercel; HTML routes redirect there.
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://cbd-calm-route.vercel.app")
+
 
 def svc():
     return app.extensions["forecast_service"].service
@@ -34,39 +38,43 @@ def crowd():
 
 # ------------------------------------------------------------- HTML Views -
 
+def _frontend(path: str = ""):
+    return redirect(f"{FRONTEND_URL.rstrip('/')}/{path.lstrip('/')}")
+
+
 @app.get("/")
 def index():
-    return render_template("map.html")
+    return _frontend("")
 
 
 @app.get("/forecast")
 def dashboard():
-    return render_template("index.html")
+    return _frontend("")
 
 
 @app.get("/map")
 def map_page():
-    return render_template("map.html")
+    return _frontend("map")
 
 
 @app.get("/predict")
 def predict_page():
-    return render_template("predict.html")
+    return _frontend("predict")
 
 
 @app.get("/models")
 def models():
-    return render_template("models.html")
+    return _frontend("models")
 
 
 @app.get("/features")
 def features():
-    return render_template("features.html")
+    return _frontend("features")
 
 
 @app.get("/help")
 def help_page():
-    return render_template("help.html")
+    return _frontend("help")
 
 
 # ------------------------------------------------ Legacy API Compatibility -

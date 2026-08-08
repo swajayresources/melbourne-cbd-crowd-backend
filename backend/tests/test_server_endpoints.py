@@ -19,15 +19,16 @@ def test_endpoints():
     app = create_app("testing")
     client = app.test_client()
 
-    # HTML pages
+    # HTML pages now redirect to the Vercel frontend
     r_index = client.get("/")
-    check("GET / returns 200", r_index.status_code == 200)
+    check("GET / redirects to frontend", r_index.status_code == 302)
+    check("redirect target is vercel.app", "vercel.app" in r_index.headers.get("Location", ""))
 
     r_map = client.get("/map")
-    check("GET /map returns 200", r_map.status_code == 200)
+    check("GET /map redirects to frontend", r_map.status_code == 302)
 
     r_predict = client.get("/predict")
-    check("GET /predict returns 200", r_predict.status_code == 200)
+    check("GET /predict redirects to frontend", r_predict.status_code == 302)
 
     # API Map
     r_api_map = client.get("/api/map")
