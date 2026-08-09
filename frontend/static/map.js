@@ -104,15 +104,15 @@
 
     sensors.forEach((s) => {
       const color = s.level === "HIGH" ? "#dc3545" : s.level === "MEDIUM" ? "#ffc107" : "#28a745";
-      const radius = isHighDetail ? 8 : 6;
+      const radius = isHighDetail ? 9 : 7;
 
       const marker = L.circleMarker([s.latitude, s.longitude], {
         radius: radius,
         fillColor: color,
-        color: color,
+        color: "#000000",
         weight: isHighDetail ? 2 : 1.5,
-        opacity: 0.95,
-        fillOpacity: 0.8,
+        opacity: 1,
+        fillOpacity: 0.85,
       });
 
       if (isHighDetail) {
