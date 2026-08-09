@@ -293,10 +293,13 @@ footer {
 
 /* ---- mobile ---- */
 @media (max-width: 768px) {
+  /* Mobile: map on top (Google Maps pattern), controls scroll below it.
+     Vertical swipes scroll the page; horizontal swipes pan the map. */
   .maps-wrapper { flex-direction: column; height: auto; }
-  .maps-sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--line); max-height: 45vh; }
-  .maps-canvas { height: 55vh; min-height: 350px; position: relative; }
+  .maps-sidebar { order: 2; width: 100%; border-right: none; border-top: 1px solid var(--line); max-height: none; }
+  .maps-canvas { order: 1; height: 45vh; min-height: 280px; max-height: 50vh; position: relative; }
   .maps-canvas #map { position: absolute; inset: 0; height: 100% !important; width: 100% !important; }
+  .leaflet-container { touch-action: pan-x pan-y !important; }
   .topbar { padding: 0.4rem 0.8rem; }
   .brand { font-size: 0.9rem; }
   .topbar nav a { padding: 0.25rem 0.5rem; font-size: 0.78rem; }

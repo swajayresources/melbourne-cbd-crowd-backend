@@ -25,11 +25,16 @@
   function initMap() {
     if (!$("map")) return;
 
+    const isTouch = window.matchMedia("(pointer: coarse)").matches;
+
     map = L.map("map", {
       center: [-37.815, 144.965],
       zoom: 14,
       minZoom: 13,
       maxBounds: [[-37.840, 144.920], [-37.780, 145.010]],
+      scrollWheelZoom: !isTouch,
+      doubleClickZoom: !isTouch,
+      tap: !isTouch,
     });
 
     L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
