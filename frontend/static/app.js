@@ -46,6 +46,29 @@
     savePrefs();
   });
 
+  /* ---------- dark "sensor grid" theme ---------- */
+  function applyDark() {
+    document.body.classList.toggle("dark", !!prefs.dark);
+    const map = window.__map;
+    if (map && window.__darkTiles) {
+      if (prefs.dark) {
+        window.__darkTiles.addTo(map);
+      } else {
+        map.removeLayer(window.__darkTiles);
+      }
+    }
+    if (window.__rerenderSensors) window.__rerenderSensors();
+  }
+  const darkToggle = document.getElementById("darkToggle");
+  if (darkToggle) {
+    darkToggle.addEventListener("click", () => {
+      prefs.dark = !prefs.dark;
+      applyDark();
+      savePrefs();
+    });
+  }
+  applyDark();
+
   /* ---------- tiny fetch wrapper + badges ---------- */
   const API = {
     async get(path) {

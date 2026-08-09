@@ -44,6 +44,63 @@ body.hc { --bg: #000000; --fg: #ffffff; --muted: #d9d9d9; --line: #6b6b6b;
   --low-bg: #0b2412; --low-fg: #7dffa8; --med-bg: #2a2100; --med-fg: #ffd966;
   --high-bg: #2a0d09; --high-fg: #ff9c91; }
 
+/* ---- dark "sensor grid" theme (explicit user choice, remembered) ---- */
+body.dark {
+  --bg: #0d1420;
+  --fg: #dce6f2;
+  --muted: #8ea3bd;
+  --line: #2a3a52;
+  --accent: #22d3ee;
+  --accent-fg: #06121a;
+  --band-fill: rgba(34, 211, 238, 0.16);
+  --ok-bg: #0a2e1f;  --ok-fg: #6ee7b7;
+  --warn-bg: #2f2500; --warn-fg: #fcd34d;
+  --err-bg: #2d0a0a; --err-fg: #fca5a5;
+  --code-bg: #101b2b;
+  --low-bg: #0a2e1f;  --low-fg: #6ee7b7;
+  --med-bg: #2f2500; --med-fg: #fcd34d;
+  --high-bg: #2d0a0a; --high-fg: #fca5a5;
+}
+body.dark .topbar,
+body.dark .maps-sidebar,
+body.dark .route-card,
+body.dark .card,
+body.dark .suggestions {
+  background: rgba(13, 20, 32, 0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+body.dark input[type="text"],
+body.dark input[type="datetime-local"],
+body.dark select {
+  background: #101b2b;
+  color: var(--fg);
+  border-color: var(--line);
+}
+body.dark .leaflet-container {
+  background: #0d1420;
+}
+body.dark .leaflet-popup-content-wrapper,
+body.dark .leaflet-popup-tip {
+  background: #101b2b;
+  color: var(--fg);
+}
+
+/* glowing sensor dots (respect reduced-motion) */
+body.dark .sensor-dot-glow {
+  animation: sensor-pulse 2.6s ease-in-out infinite;
+}
+body.dark .sensor-dot-glow.med { animation-duration: 3.2s; }
+body.dark .sensor-dot-glow.high { animation-duration: 2s; }
+@keyframes sensor-pulse {
+  0%, 100% { filter: drop-shadow(0 0 2px currentColor); }
+  50% { filter: drop-shadow(0 0 9px currentColor); }
+}
+@media (prefers-reduced-motion: reduce) {
+  body.dark .sensor-dot-glow { animation: none; }
+  body.dark .sensor-dot-glow { filter: drop-shadow(0 0 5px currentColor); }
+}
+
 /* ---- font size (user choice, remembered) ---- */
 body.size-16 { font-size: 16px; }
 body.size-20 { font-size: 20px; }

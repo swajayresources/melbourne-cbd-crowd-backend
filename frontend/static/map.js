@@ -36,9 +36,19 @@
       attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 18,
     }).addTo(map);
+    window.__darkTiles = L.tileLayer(
+      "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+      {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        maxZoom: 18,
+      }
+    );
 
     sensorsLayer = L.layerGroup().addTo(map);
     routeLayerGroup = L.layerGroup().addTo(map);
+
+    window.__map = map;
+    window.__rerenderSensors = () => renderSensorsOnMap(state.sensors);
 
     // Zoom-dependent information density
     map.on("zoomend", () => {
@@ -91,13 +101,16 @@
     const isHighDetail = zoom >= 15;
 
     sensors.forEach((s) => {
-      const color = s.level === "HIGH" ? "#dc3545" : s.level === "MEDIUM" ? "#ffc107" : "#28a745";
+      const isDark = document.body.classList.contains("dark");
+      const color = s.level === "HIGH" ? "#f87171" : s.level === "MEDIUM" ? "#fcd34d" : "#34d399";
       const radius = isHighDetail ? 9 : 7;
+      const dotClass = isDark ? " sensor-dot-glow " + s.level.toLowerCase() : "";
 
       const marker = L.circleMarker([s.latitude, s.longitude], {
         radius: radius,
         fillColor: color,
-        color: "#000000",
+        color: isDark ? color : "#000000",
+        className: dotClass.trim(),
         weight: isHighDetail ? 2 : 1.5,
         opacity: 1,
         fillOpacity: 0.85,
