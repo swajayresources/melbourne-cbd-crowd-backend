@@ -28,6 +28,7 @@
       now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
       timeInput.value = now.toISOString().slice(0, 16);
     }
+    setPredTimeMin();
   }
 
   function bindEvents() {
@@ -121,6 +122,15 @@
     box.hidden = false;
   }
 
+  function setPredTimeMin() {
+    const el = $("predTime");
+    if (!el) return;
+    const now = new Date();
+    now.setSeconds(0, 0);
+    const pad = (n) => String(n).padStart(2, "0");
+    el.min = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  }
+
   async function runPrediction() {
     const destInput = $("destSearch");
     const timeInput = $("predTime");
@@ -131,6 +141,11 @@
 
     if (!query) {
       alert("Please type a location to check.");
+      return;
+    }
+
+    if (dtVal && new Date(dtVal) < new Date()) {
+      alert("Please pick a future date and time.");
       return;
     }
 

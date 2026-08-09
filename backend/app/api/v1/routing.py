@@ -50,6 +50,9 @@ def route():
     except Exception:
         dt = pd.Timestamp.now()
 
+    if dt < pd.Timestamp.now().floor("h"):
+        return jsonify(dict(error="datetime must be in the future or the current hour")), 400
+
     routes, is_fallback = routing_svc.fetch_routes(orig_lat, orig_lon, dest_lat, dest_lon)
     evaluated = routing_svc.evaluate_routes(
         routes=routes,
