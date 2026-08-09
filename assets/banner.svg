@@ -1,0 +1,32 @@
+<svg width="720" height="140" viewBox="0 0 720 140" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0f2027"/>
+      <stop offset="50%" stop-color="#203a43"/>
+      <stop offset="100%" stop-color="#2c5364"/>
+    </linearGradient>
+    <style>
+      @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+      @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+      @keyframes dashmove { to { stroke-dashoffset: -48; } }
+      .dot-g { animation: pulse 2s ease-in-out infinite; }
+      .dot-r { animation: pulse 1.6s ease-in-out infinite; }
+      .dot-y { animation: pulse 2.4s ease-in-out infinite; }
+      .pin { animation: float 3s ease-in-out infinite; }
+      .road { stroke-dasharray: 12 6; animation: dashmove 1.4s linear infinite; }
+    </style>
+  </defs>
+  <rect x="0" y="0" width="720" height="140" rx="16" fill="url(#sky)"/>
+  <text x="360" y="30" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#8fd3c7">MELBOURNE CBD</text>
+  <path class="road" d="M 60 105 L 300 70 L 470 80 L 660 45" stroke="#f4a261" stroke-width="4" fill="none" opacity="0.85"/>
+  <path class="road" d="M 40 40 L 200 80 L 380 95 L 680 110" stroke="#e9c46a" stroke-width="3" fill="none" opacity="0.6"/>
+  <g class="pin"><circle cx="300" cy="62" r="7" fill="#e63946"/><circle cx="300" cy="62" r="12" fill="none" stroke="#e63946" stroke-width="1.5" opacity="0.5"><animate attributeName="r" values="7;18;7" dur="2.2s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.5;0;0.5" dur="2.2s" repeatCount="indefinite"/></circle></g>
+  <circle class="dot-g" cx="110" cy="95" r="5" fill="#2a9d8f"/>
+  <circle class="dot-y" cx="210" cy="86" r="5" fill="#e9c46a"/>
+  <circle class="dot-r" cx="410" cy="84" r="5" fill="#e63946"/>
+  <circle class="dot-g" cx="500" cy="74" r="5" fill="#2a9d8f"/>
+  <circle class="dot-y" cx="585" cy="98" r="5" fill="#e9c46a"/>
+  <circle class="dot-r" cx="645" cy="38" r="5" fill="#e63946"/>
+  <circle class="dot-g" cx="120" cy="42" r="5" fill="#2a9d8f"/>
+  <text x="360" y="125" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#ffffff" font-weight="bold">Real-time crowd sensing · Calm-route planning · Future predictions</text>
+</svg>
