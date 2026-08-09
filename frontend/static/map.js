@@ -103,16 +103,16 @@
     const isHighDetail = zoom >= 15;
 
     sensors.forEach((s) => {
-      const fillOpacity = s.level === "HIGH" ? 0.9 : s.level === "MEDIUM" ? 0.55 : 0.2;
+      const color = s.level === "HIGH" ? "#dc3545" : s.level === "MEDIUM" ? "#ffc107" : "#28a745";
       const radius = isHighDetail ? 8 : 6;
 
       const marker = L.circleMarker([s.latitude, s.longitude], {
         radius: radius,
-        fillColor: "#111111",
-        color: "#111111",
+        fillColor: color,
+        color: color,
         weight: isHighDetail ? 2 : 1.5,
-        opacity: 1,
-        fillOpacity: fillOpacity,
+        opacity: 0.95,
+        fillOpacity: 0.8,
       });
 
       if (isHighDetail) {
