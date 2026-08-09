@@ -144,9 +144,19 @@
       return;
     }
 
-    if (dtVal && new Date(dtVal) < new Date()) {
-      alert("Please pick a future date and time.");
-      return;
+    if (dtVal) {
+      const chosen = new Date(dtVal);
+      const now = new Date();
+      if (chosen < now) {
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const dateLabel = `${chosen.getDate()} ${months[chosen.getMonth()]} ${chosen.getFullYear()}`;
+        if (chosen.toDateString() === now.toDateString()) {
+          alert(`The selected time has already passed for today (${dateLabel}). Please choose a future time.`);
+        } else {
+          alert(`The selected date (${dateLabel}) is in the past. Please choose today or a future date.`);
+        }
+        return;
+      }
     }
 
     state.datetime = dtVal;
@@ -156,8 +166,8 @@
 
     try {
       const r = await fetch(`/api/predict?${params.toString()}`);
-      if (!r.ok) throw new Error("Prediction API error");
-      const data = await r.json();
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.error || "Prediction API error");
 
       state.lastPredData = data;
       state.dest = {
@@ -169,7 +179,7 @@
       renderPredictionResults(data);
       if (sec) sec.style.display = "block";
     } catch (e) {
-      alert("Could not retrieve prediction for this location.");
+      alert(e.message && e.message !== "Prediction API error" ? e.message : "Could not retrieve prediction for this location.");
     }
   }
 
