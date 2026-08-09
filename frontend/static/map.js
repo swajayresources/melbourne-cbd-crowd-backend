@@ -1,4 +1,4 @@
-/* Melbourne CBD Real-Time Pedestrian Crowd & Sensory Map logic. */
+﻿/* Melbourne CBD Real-Time Pedestrian Crowd & Sensory Map logic. */
 (function () {
   "use strict";
 
@@ -32,23 +32,13 @@
       maxBounds: [[-37.840, 144.920], [-37.780, 145.010]],
     });
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
       maxZoom: 18,
     }).addTo(map);
-    window.__darkTiles = L.tileLayer(
-      "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-      {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        maxZoom: 18,
-      }
-    );
 
     sensorsLayer = L.layerGroup().addTo(map);
     routeLayerGroup = L.layerGroup().addTo(map);
-
-    window.__map = map;
-    window.__rerenderSensors = () => renderSensorsOnMap(state.sensors);
 
     // Zoom-dependent information density
     map.on("zoomend", () => {
@@ -68,6 +58,18 @@
         setDestination(null, null, "");
       }
     });
+
+    // Fix distorted/stretched tiles on resize, orientation change, or after
+    // layout shifts (e.g. route results appearing in the sidebar).
+    window.addEventListener("resize", () => {
+      if (map) setTimeout(() => map.invalidateSize({ animate: false }), 60);
+    });
+    document.addEventListener("orientationchange", () => {
+      if (map) setTimeout(() => map.invalidateSize({ animate: false }), 120);
+    });
+    new ResizeObserver(() => {
+      if (map) map.invalidateSize({ animate: false });
+    }).observe(document.getElementById("map"));
   }
 
   async function loadSensorsMap() {
@@ -101,19 +103,16 @@
     const isHighDetail = zoom >= 15;
 
     sensors.forEach((s) => {
-      const isDark = document.body.classList.contains("dark");
-      const color = s.level === "HIGH" ? "#f87171" : s.level === "MEDIUM" ? "#fcd34d" : "#34d399";
-      const radius = isHighDetail ? 9 : 7;
-      const dotClass = isDark ? " sensor-dot-glow " + s.level.toLowerCase() : "";
+      const fillOpacity = s.level === "HIGH" ? 0.9 : s.level === "MEDIUM" ? 0.55 : 0.2;
+      const radius = isHighDetail ? 8 : 6;
 
       const marker = L.circleMarker([s.latitude, s.longitude], {
         radius: radius,
-        fillColor: color,
-        color: isDark ? color : "#000000",
-        className: dotClass.trim(),
+        fillColor: "#111111",
+        color: "#111111",
         weight: isHighDetail ? 2 : 1.5,
         opacity: 1,
-        fillOpacity: 0.85,
+        fillOpacity: fillOpacity,
       });
 
       if (isHighDetail) {
@@ -124,11 +123,11 @@
       }
 
       const popupHtml = `
-        <div style="font-family: system-ui, sans-serif; min-width: 190px;">
-          <strong style="font-size: 1.05rem;">${escapeHtml(s.description || s.name)}</strong>
+        <div style="font-family: 'Inter', sans-serif; min-width: 200px;">
+          <strong style="font-family: 'Archivo', sans-serif; font-size: 1.05rem; font-weight: 800; text-transform: uppercase; color: #111;">${escapeHtml(s.description || s.name)}</strong>
           <p style="margin: 0.3rem 0;">Status: <span class="badge badge-${s.level.toLowerCase()}">${escapeHtml(s.sensory_label || s.level)}</span></p>
           <p style="margin: 0.3rem 0;">Live Count: <strong>${Math.round(s.current_count)}</strong> people/hr</p>
-          <p style="margin: 0.3rem 0; font-size: 0.88rem; color: #555;">${escapeHtml(s.sensory_advice || '')}</p>
+          <p style="margin: 0.3rem 0; font-size: 0.88rem; color: #9A9A98;">${escapeHtml(s.sensory_advice || '')}</p>
           <div style="margin-top: 0.6rem; display: flex; flex-direction: column; gap: 0.3rem;">
             <button onclick="window.setOrigFromPopup(${s.latitude}, ${s.longitude}, '${escapeHtml(s.name)}')">Start Route Here</button>
             <button onclick="window.setDestFromPopup(${s.latitude}, ${s.longitude}, '${escapeHtml(s.name)}')">End Route Here</button>
@@ -298,7 +297,7 @@
     }
 
     if (routeStatus) {
-      routeStatus.textContent = "Comparing live route sensory loads…";
+      routeStatus.textContent = "Comparing live route sensory loadsΓÇª";
       routeStatus.className = "badge badge-unknown";
     }
 
@@ -345,8 +344,8 @@
       const isLeastCrowded = r.is_least_crowded;
       const isFastest = r.is_fastest;
 
-      const color = isLeastCrowded ? "#28a745" : isFastest ? "#0b5cad" : "#6c757d";
-      const weight = isLeastCrowded || isFastest ? 6 : 4;
+      const color = isLeastCrowded ? "#E8462A" : isFastest ? "#111111" : "#D8D8D6";
+      const weight = isLeastCrowded ? 5 : isFastest ? 4 : 2;
       const dashArray = r.is_fallback ? "8, 8" : null;
 
       const polyline = L.polyline(r.coordinates, {
@@ -379,9 +378,9 @@
 
       let tag = "";
       if (r.is_least_crowded && r.is_fastest) {
-        tag = '<span class="badge badge-ok">⭐ FASTEST & CALMEST PATH</span>';
+        tag = '<span class="badge badge-ok">Γ¡É FASTEST & CALMEST PATH</span>';
       } else if (r.is_least_crowded) {
-        tag = '<span class="badge badge-ok">⭐ RECOMMENDED CALM ROUTE</span>';
+        tag = '<span class="badge badge-ok">Γ¡É RECOMMENDED CALM ROUTE</span>';
       } else if (r.is_fastest) {
         tag = '<span class="badge badge-warn">SHORTEST / FASTEST PATH</span>';
       } else {
@@ -401,7 +400,7 @@
           </ul>
         `;
       } else if (r.crowd_score === "UNKNOWN") {
-        remarksHtml = "<p class='hint'>No pedestrian sensors within 200m of this route — rating unavailable.</p>";
+        remarksHtml = "<p class='hint'>No pedestrian sensors within 200m of this route ΓÇö rating unavailable.</p>";
       } else {
         remarksHtml = "<p class='hint'>Peaceful path with low crowd density.</p>";
       }
@@ -414,7 +413,7 @@
           ${crowdBadge}
         </div>
         <div class="route-metrics">
-          ⏱️ <strong>${r.duration_min} mins</strong> (${(r.distance_m / 1000).toFixed(2)} km)
+          ΓÅ▒∩╕Å <strong>${r.duration_min} mins</strong> (${(r.distance_m / 1000).toFixed(2)} km)
         </div>
         ${estimatedBadge}
         ${fallbackNote}
