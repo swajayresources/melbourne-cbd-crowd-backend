@@ -226,7 +226,7 @@
           const r = await fetch(`/api/geocode?q=${encodeURIComponent(q)}`);
           if (!r.ok) return;
           const data = await r.json();
-          renderSuggestions(data.results || [], box, onSelect);
+          renderSuggestions(data.results || [], box, onSelect, q);
         } catch (e) {}
       }, 300);
     });
@@ -238,10 +238,18 @@
     });
   }
 
-  function renderSuggestions(results, box, onSelect) {
+  function renderSuggestions(results, box, onSelect, query) {
     box.innerHTML = "";
     if (!results.length) {
-      box.hidden = true;
+      if (query && query.trim().length >= 2) {
+        box.hidden = false;
+        const msg = document.createElement("div");
+        msg.className = "suggestion-item suggestion-empty";
+        msg.textContent = `No address found for "${query.trim()}". Try a Melbourne CBD street, e.g. 455 Elizabeth Street.`;
+        box.appendChild(msg);
+      } else {
+        box.hidden = true;
+      }
       return;
     }
 
@@ -368,6 +376,9 @@
       }
 
       const crowdBadge = `<span class="badge badge-${r.crowd_score.toLowerCase()}">${escapeHtml(r.sensory_tag || r.crowd_score)}</span>`;
+      const estimatedBadge = r.rating_estimated
+        ? '<span class="badge badge-warn">Estimated from historical averages</span>'
+        : "";
 
       let remarksHtml = "";
       if (r.remarks && r.remarks.length > 0) {
@@ -376,6 +387,8 @@
             ${r.remarks.map((rem) => `<li>${escapeHtml(rem)}</li>`).join("")}
           </ul>
         `;
+      } else if (r.crowd_score === "UNKNOWN") {
+        remarksHtml = "<p class='hint'>No pedestrian sensors within 200m of this route — rating unavailable.</p>";
       } else {
         remarksHtml = "<p class='hint'>Peaceful path with low crowd density.</p>";
       }
@@ -390,6 +403,7 @@
         <div class="route-metrics">
           ⏱️ <strong>${r.duration_min} mins</strong> (${(r.distance_m / 1000).toFixed(2)} km)
         </div>
+        ${estimatedBadge}
         ${fallbackNote}
         <div>
           <strong>Sensory Breakdown:</strong>
