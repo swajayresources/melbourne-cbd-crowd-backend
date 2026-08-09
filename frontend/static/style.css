@@ -63,6 +63,8 @@ a { color: var(--accent); text-underline-offset: 3px; }
   border-radius: 4px; }
 .topbar nav a[aria-current="page"] { background: var(--accent); color: var(--accent-fg); }
 .prefs { display: flex; gap: 0.4rem; }
+.session-chip { font-size: 0.75rem; padding: 0.2rem 0.55rem; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); cursor: pointer; white-space: nowrap; }
+.session-chip-active { border-color: var(--accent); color: var(--accent); }
 
 button { font: inherit; color: var(--fg); background: var(--code-bg);
   border: 2px solid var(--line); border-radius: 6px; padding: 0.45rem 0.9rem;

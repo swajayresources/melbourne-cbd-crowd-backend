@@ -10,6 +10,11 @@
 
   function savePrefs() {
     try { localStorage.setItem("mpl_prefs", JSON.stringify(prefs)); } catch (e) {}
+    // Zero-PII cloud sync: prefs follow the anonymous session, keyed only by
+    // the WebCrypto session hash (never name/email/device).
+    if (window.AuthAPI && AuthAPI.getToken()) {
+      AuthAPI.savePrefs(prefs).catch(() => {});
+    }
   }
 
   const fontMinus = document.getElementById("fontMinus");

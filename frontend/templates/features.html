@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Features — Melbourne Pedestrian Forecast</title>
+<title>Features â€” Melbourne Pedestrian Forecast</title>
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
@@ -29,7 +29,7 @@
   <p class="lead">Both models were given the same 12 features. This page shows how much each one contributed (gain importance, from the 1-hour models).</p>
 
   <section aria-labelledby="h-imp">
-    <h2 id="h-imp">Feature importance — LightGBM vs XGBoost</h2>
+    <h2 id="h-imp">Feature importance â€” LightGBM vs XGBoost</h2>
     <div id="impTable" class="mono"></div>
     <p id="impStats" class="hint"></p>
   </section>
@@ -42,7 +42,7 @@
       <dt>lag_1</dt><dd>How many people passed in the previous hour.</dd>
       <dt>hour</dt><dd>Which hour of the day it is (morning and evening peaks matter).</dd>
       <dt>roll_24_mean / roll_168_mean / roll_672_mean</dt><dd>Average count over the last day / week / month.</dd>
-      <dt>location_code</dt><dd>Which sensor — different streets have different traffic levels.</dd>
+      <dt>location_code</dt><dd>Which sensor â€” different streets have different traffic levels.</dd>
       <dt>is_weekend, dow</dt><dd>Whether it is a weekend and which weekday.</dd>
       <dt>month</dt><dd>Time of year.</dd>
       <dt>is_public_holiday</dt><dd>Victorian public holiday. Important in practice, but the models learned little from it because holidays are rare and their effect is mostly absorbed by other features.</dd>
@@ -51,8 +51,10 @@
 </main>
 
 <footer>
-  <p>Data: City of Melbourne Open Data (CC BY 4.0) — Pedestrian Counting System.</p>
+  <p>Data: City of Melbourne Open Data (CC BY 4.0) â€” Pedestrian Counting System.</p>
 </footer>
+
+<script src="/static/auth.js"></script>
 <script src="/static/app.js"></script>
 <script src="/static/features.js"></script>
 </body>
