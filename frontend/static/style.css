@@ -293,12 +293,12 @@ footer {
 
 /* ---- mobile ---- */
 @media (max-width: 768px) {
-  /* Mobile: map on top (Google Maps pattern), controls scroll below it.
-     The map lives inside an orange-bordered box matching the control boxes. */
+  /* Mobile: map on top, aligned to the same width/padding as the sidebar
+     controls below. No box, no frame — just the map. */
   .maps-wrapper { flex-direction: column; height: auto; }
   .maps-sidebar { order: 2; width: 100%; border-right: none; border-top: 1px solid var(--line); max-height: none; }
-  .maps-canvas { order: 1; width: calc(100% - 2rem); margin: 1rem; height: 40vh; min-height: 260px; max-height: 46vh; position: relative; border: 2px solid var(--accent); border-radius: 0; padding: 0.4rem; box-sizing: border-box; background: var(--surface); }
-  .maps-canvas #map { position: absolute; top: 0.4rem; left: 0.4rem; right: 0.4rem; bottom: 0.4rem; height: auto !important; width: auto !important; }
+  .maps-canvas { order: 1; width: 100%; height: 42vh; min-height: 260px; max-height: 48vh; position: relative; padding: 0.8rem; box-sizing: border-box; }
+  .maps-canvas #map { position: absolute; inset: 0; height: 100% !important; width: 100% !important; }
   .leaflet-container { touch-action: pan-x pan-y !important; }
   .topbar { padding: 0.4rem 0.8rem; }
   .brand { font-size: 0.9rem; }
