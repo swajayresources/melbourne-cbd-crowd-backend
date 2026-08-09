@@ -75,19 +75,17 @@ a { color: var(--accent); text-underline-offset: 3px; }
 .topbar {
   display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;
   justify-content: space-between;
-  border-bottom: 2px solid var(--accent);
+  border-bottom: 2px solid var(--line);
   padding: 0.5rem 1.5rem;
   background: var(--bg);
 }
 .brand {
   font-family: var(--font-head);
-  font-weight: 900; color: #fff; text-decoration: none;
+  font-weight: 900; color: var(--fg); text-decoration: none;
   font-size: 1.1rem; letter-spacing: -0.03em;
   text-transform: uppercase;
-  -webkit-text-stroke: 1.5px var(--accent);
-  text-shadow: 2px 2px 0 var(--accent);
 }
-.brand-sub { color: var(--muted); font-weight: 400; }
+.brand-sub { color: var(--muted); font-weight: 400; text-transform: none; letter-spacing: 0; }
 .topbar nav { display: flex; gap: 0; flex-wrap: wrap; }
 .topbar nav a {
   color: var(--fg); text-decoration: none;
@@ -277,7 +275,7 @@ select:focus, input:focus { border-color: var(--accent); outline: none; }
   padding: 1rem; background: var(--surface);
 }
 .biglabel { color: var(--muted); margin: 0; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
-.bignumber { font-family: var(--font-head); font-size: 2.5rem; font-weight: 900; margin: 0.2rem 0; letter-spacing: -0.03em; color: #fff; -webkit-text-stroke: 1.5px var(--accent); text-shadow: 2px 2px 0 var(--accent); }
+.bignumber { font-family: var(--font-head); font-size: 2.5rem; font-weight: 900; margin: 0.2rem 0; letter-spacing: -0.03em; color: var(--fg); }
 .bigsub { color: var(--muted); font-size: 0.88rem; margin: 0; }
 .sentence { font-size: 1.02rem; margin-top: 0.4rem; }
 
