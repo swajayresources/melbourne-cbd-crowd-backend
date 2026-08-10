@@ -6,7 +6,7 @@
 
 <img src="assets/banner.svg" alt="banner" />
 
-**Live frontend** &nbsp;·&nbsp; [cbd-calm-route.vercel.app](https://cbd-calm-route.vercel.app) &nbsp;|&nbsp; **Live API** &nbsp;·&nbsp; [fit5120-backend-y5zg.onrender.com](https://fit5120-backend-y5zg.onrender.com)
+**Live frontend** &nbsp;·&nbsp; [cbd-calm-route.vercel.app](https://cbd-calm-route.vercel.app) &nbsp;|&nbsp; **Live API** &nbsp;·&nbsp; [melbourne-cbd-crowd-backend.onrender.com](https://melbourne-cbd-crowd-backend.onrender.com)
 
 ---
 
@@ -184,7 +184,7 @@ sequenceDiagram
 | :--- | :--- | :--- |
 | **Frontend** | HTML5 + Vanilla ES6 + CSS3 + **Leaflet.js 1.9.4** | Served from `frontend/` by **Vercel**; `vercel.json` rewrites `/api/*` → Render backend |
 | **Backend** | **Flask 3.0 + Gunicorn** | `wsgi.py` = production entry (`gunicorn wsgi:app`); app factory in `app/__init__.py`; blueprints under `app/api/v1/` |
-| **Hosting** | **Vercel** (frontend) + **Render** (backend) | Render service `fit5120-backend` (Oregon, Python 3.11.8), rootDir `backend`, deploys from `main` |
+| **Hosting** | **Vercel** (frontend) + **Render** (backend) | Render service `indexp-backend` (Oregon, Python 3.11.8), rootDir `backend`, deploys from `dev` |
 | **ML** | **LightGBM → ONNX Runtime** | Trained offline (`src/`), exported via `scripts/export_onnx.py`, served on Modal serverless |
 | **Serverless ML** | **Modal** | `scripts/modal_app.py` via `modal deploy`; Render calls 3 endpoint URLs from env vars |
 | **Database** | **Supabase PostgreSQL** | `scripts/supabase_schema.sql` + seed scripts; `DatabaseService` reads via PostgREST |
@@ -268,13 +268,13 @@ cd frontend && python -m http.server 5000
 
 | Tier | Service | Branch | URL |
 | :--- | :--- | :--- | :--- |
-| Frontend | Vercel · `cbd-calm-route` | `frontend/` root | https://fit-5120-onboarding-ten.vercel.app/ |
-| Backend | Render · `fit5120-backend` | `main` (auto-deploy) | https://fit5120-backend-y5zg.onrender.com |
+| Frontend | Vercel · `cbd-calm-route` | `frontend/` root | https://cbd-calm-route.vercel.app/ |
+| Backend | Render · `indexp-backend` | `dev` (manual deploy) | https://melbourne-cbd-crowd-backend.onrender.com |
 | ML | Modal · `melbourne-cbd-crowd-ml` | deployed app | via Modal |
 | Cache | Upstash Redis | `endless-terrapin-181746` | REST endpoint |
 | DB | Supabase | `hklrfdgxmuixcbymvdpo` | PostgREST |
 
-**Release flow:** features land on `developer` → fast-forward to `main` → Render auto-deploys; frontend is deployed manually via Vercel.
+**Release flow:** features land on `dev` → fast-forward to `main`; Render and Vercel deploys are triggered manually via API.
 
 ---
 
