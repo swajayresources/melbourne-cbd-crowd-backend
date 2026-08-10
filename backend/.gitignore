@@ -26,3 +26,6 @@ server_out.log
 # Large Datasets (>100MB GitHub limit)
 data/raw/hourly_counts.csv
 *.csv
+
+# Trained model binaries (regenerable via src/experiment.py; ONNX exports are tracked)
+results/**/*.model

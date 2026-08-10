@@ -10,6 +10,11 @@
 
   function savePrefs() {
     try { localStorage.setItem("mpl_prefs", JSON.stringify(prefs)); } catch (e) {}
+    // Zero-PII cloud sync: prefs follow the anonymous session, keyed only by
+    // the WebCrypto session hash (never name/email/device).
+    if (window.AuthAPI && AuthAPI.getToken()) {
+      AuthAPI.savePrefs(prefs).catch(() => {});
+    }
   }
 
   const fontMinus = document.getElementById("fontMinus");
@@ -40,6 +45,29 @@
     applyContrast();
     savePrefs();
   });
+
+  /* ---------- dark "sensor grid" theme ---------- */
+  function applyDark() {
+    document.body.classList.toggle("dark", !!prefs.dark);
+    const map = window.__map;
+    if (map && window.__darkTiles) {
+      if (prefs.dark) {
+        window.__darkTiles.addTo(map);
+      } else {
+        map.removeLayer(window.__darkTiles);
+      }
+    }
+    if (window.__rerenderSensors) window.__rerenderSensors();
+  }
+  const darkToggle = document.getElementById("darkToggle");
+  if (darkToggle) {
+    darkToggle.addEventListener("click", () => {
+      prefs.dark = !prefs.dark;
+      applyDark();
+      savePrefs();
+    });
+  }
+  applyDark();
 
   /* ---------- tiny fetch wrapper + badges ---------- */
   const API = {

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Predict Future Crowd & Calmness — Melbourne Pedestrian Forecast</title>
+<title>Predict Future Crowd & Calmness â€” Melbourne Pedestrian Forecast</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 <link rel="stylesheet" href="/static/style.css">
 </head>
@@ -19,6 +19,7 @@
     <button id="fontMinus" aria-label="Smaller text">A-</button>
     <button id="fontPlus" aria-label="Larger text">A+</button>
     <button id="contrastToggle" aria-pressed="false">High contrast</button>
+    <button id="darkToggle" aria-pressed="false">Sensor Grid</button>
   </div>
 </header>
 
@@ -40,7 +41,7 @@
 
         <div class="field">
           <label for="predTime">Target Date & Time</label>
-          <input type="datetime-local" id="predTime">
+          <input type="datetime-local" id="predTime" min="">
           <p class="hint">Select the future hour you plan to be there</p>
         </div>
       </div>
@@ -57,26 +58,26 @@
       <div class="result" aria-live="polite">
         <div class="bigbox">
           <p class="biglabel">Predicted Sensory Status</p>
-          <p class="bignumber" id="resLevel">—</p>
+          <p class="bignumber" id="resLevel">â€”</p>
           <p class="bigsub" id="resAdviceNote"></p>
         </div>
 
         <div class="bigbox">
           <p class="biglabel">Expected Pedestrian Flow</p>
-          <p class="bignumber" id="resPoint">—</p>
+          <p class="bignumber" id="resPoint">â€”</p>
           <p class="bigsub" id="resTimeLabel"></p>
         </div>
 
         <div class="bigbox">
           <p class="biglabel">80% Likely Range</p>
-          <p class="bignumber" id="resBand">—</p>
+          <p class="bignumber" id="resBand">â€”</p>
           <p class="bigsub">8 out of 10 times actual flow lands inside</p>
         </div>
       </div>
 
       <div class="callout-box" style="margin-top: 1.5rem;" aria-live="polite">
         <h3>Overstimulation Probability Estimate</h3>
-        <p class="sentence" id="resProbSentence">Calculating probability…</p>
+        <p class="sentence" id="resProbSentence">Calculating probabilityâ€¦</p>
         <p class="hint">Derived from LightGBM quantile regression models trained on historical City of Melbourne pedestrian counts.</p>
         
         <div style="margin-top: 1.2rem; border-top: 1px solid var(--line); padding-top: 1rem;">
@@ -121,6 +122,8 @@
 </footer>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+<script src="/static/auth.js"></script>
 <script src="/static/app.js"></script>
 <script src="/static/predict.js"></script>
 </body>

@@ -81,6 +81,9 @@ def api_predict():
     except Exception:
         dt = pd.Timestamp.now().floor("h")
 
+    if dt < pd.Timestamp.now().floor("h"):
+        return jsonify(dict(error="datetime must be in the future or the current hour")), 400
+
     display_name = ""
     resolved_lat, resolved_lon = None, None
 

@@ -444,6 +444,7 @@ def evaluate_route_crowds(
         remarks = []
         crowd_levels = []
         sensor_details = []
+        used_rule_fallback = mode != "ml"
 
         for loc_id in route_sensor_ids[ri]:
             info = nearby_map[loc_id]
@@ -452,6 +453,7 @@ def evaluate_route_crowds(
                 pred_count = fc["1"]["lgb"]["point"]
             else:
                 pred_count = crowd_engine.predict_rule_count(loc_id, dt)
+                used_rule_fallback = True
 
             code, sensory_label, advice = crowd_engine.classify_sensory_level(loc_id, pred_count)
             crowd_levels.append(code)
@@ -472,7 +474,12 @@ def evaluate_route_crowds(
             else:
                 remarks.append(f"Calm zone near {sensor_name}")
 
-        if "HIGH" in crowd_levels:
+        if not crowd_levels:
+            # No sensor coverage within 200m of this route: show an honest
+            # unknown state instead of a misleading calm rating.
+            route_score = "UNKNOWN"
+            sensory_tag = "No Sensor Coverage"
+        elif "HIGH" in crowd_levels:
             route_score = "HIGH"
             sensory_tag = "Busy / Higher Sensory Load"
         elif "MEDIUM" in crowd_levels:
@@ -491,12 +498,13 @@ def evaluate_route_crowds(
             "fallback_note": r.get("fallback_note"),
             "crowd_score": route_score,
             "sensory_tag": sensory_tag,
+            "rating_estimated": used_rule_fallback,
             "remarks": remarks[:4],
             "nearby_sensors": sensor_details,
         })
 
     fastest = min(annotated_routes, key=lambda x: x["duration_min"])
-    score_weights = {"LOW": 1, "MEDIUM": 2, "HIGH": 3}
+    score_weights = {"LOW": 1, "MEDIUM": 2, "HIGH": 3, "UNKNOWN": 4}
     least_crowded = min(annotated_routes, key=lambda x: (score_weights[x["crowd_score"]], x["duration_min"]))
 
     for ar in annotated_routes:

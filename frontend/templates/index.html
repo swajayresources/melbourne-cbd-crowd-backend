@@ -21,17 +21,18 @@
     <button id="fontMinus" aria-label="Smaller text">A-</button>
     <button id="fontPlus" aria-label="Larger text">A+</button>
     <button id="contrastToggle" aria-pressed="false">High contrast</button>
+    <button id="darkToggle" aria-pressed="false">Sensor Grid</button>
   </div>
 </header>
 
 <main id="main">
   <section aria-labelledby="h1">
     <h1 id="h1">Pedestrian forecast</h1>
-    <p class="lead" id="oneLiner">Loading…</p>
+    <p class="lead" id="oneLiner">Loadingâ€¦</p>
 
     <div class="statusline" aria-live="polite">
-      <span id="dataStatus" class="badge badge-unknown">checking data…</span>
-      <span id="feedStatus" class="badge badge-unknown">checking live feed…</span>
+      <span id="dataStatus" class="badge badge-unknown">checking dataâ€¦</span>
+      <span id="feedStatus" class="badge badge-unknown">checking live feedâ€¦</span>
     </div>
 
     <form id="controls" class="controls" onsubmit="return false;">
@@ -68,7 +69,7 @@
           <input type="checkbox" id="autoRefresh">
           <span>Refresh automatically every 5 minutes</span>
         </label>
-        <p class="hint">Off by default — the page only changes when you ask it to.</p>
+        <p class="hint">Off by default â€” the page only changes when you ask it to.</p>
       </div>
     </form>
   </section>
@@ -78,12 +79,12 @@
     <div class="result" aria-live="polite">
       <div class="bigbox">
         <p class="biglabel">Most likely count at the forecast time</p>
-        <p class="bignumber" id="pointPred">—</p>
+        <p class="bignumber" id="pointPred">â€”</p>
         <p class="bigsub" id="pointWhen"></p>
       </div>
       <div class="bigbox">
         <p class="biglabel">80% likely range</p>
-        <p class="bignumber" id="bandPred">—</p>
+        <p class="bignumber" id="bandPred">â€”</p>
         <p class="bigsub" id="bandNote"></p>
       </div>
     </div>
@@ -98,7 +99,7 @@
     <h2 id="h3">Live sensor feed</h2>
     <p class="hint">The per-minute feed is aggregated to hourly and used as the freshest signal. It is not used for training.</p>
     <div class="feedbox">
-      <p><strong id="feedDetail">Loading…</strong></p>
+      <p><strong id="feedDetail">Loadingâ€¦</strong></p>
       <p class="hint" id="feedHint"></p>
       <button type="button" id="refreshFeed" class="secondary">Refresh live feed now</button>
       <label for="demoFeed" class="checkrow">
@@ -110,9 +111,11 @@
 </main>
 
 <footer>
-  <p>Data: City of Melbourne Open Data (CC BY 4.0) — Pedestrian Counting System.</p>
+  <p>Data: City of Melbourne Open Data (CC BY 4.0) â€” Pedestrian Counting System.</p>
   <p>Models: trained on real hourly counts (2024-08 to 2026-08), 103 sensors. <a href="/models">See how the models compare</a>.</p>
 </footer>
+
+<script src="/static/auth.js"></script>
 <script src="/static/app.js"></script>
 </body>
 </html>
