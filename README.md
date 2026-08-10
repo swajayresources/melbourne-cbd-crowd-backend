@@ -268,7 +268,7 @@ cd frontend && python -m http.server 5000
 
 | Tier | Service | Branch | URL |
 | :--- | :--- | :--- | :--- |
-| Frontend | Vercel · `cbd-calm-route` | `frontend/` root | https://cbd-calm-route.vercel.app |
+| Frontend | Vercel · `cbd-calm-route` | `frontend/` root | https://fit-5120-onboarding-ten.vercel.app/ |
 | Backend | Render · `fit5120-backend` | `main` (auto-deploy) | https://fit5120-backend-y5zg.onrender.com |
 | ML | Modal · `melbourne-cbd-crowd-ml` | deployed app | via Modal |
 | Cache | Upstash Redis | `endless-terrapin-181746` | REST endpoint |
